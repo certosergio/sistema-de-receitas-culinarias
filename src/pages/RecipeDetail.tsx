@@ -23,9 +23,11 @@ import {
   Loader2,
   CheckCircle2,
   Download,
+  Printer,
 } from 'lucide-react'
 import { RecipeActions } from '@/components/RecipeActions'
 import { exportRecipePdf } from '@/lib/recipePdf'
+import { PrintRecipe } from '@/components/PrintRecipe'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -561,6 +563,14 @@ const RecipeDetail: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <Button
+            onClick={() => window.print()}
+            className="bg-tinta hover:bg-tinta/90 text-marfim rounded-xl shadow-md px-5"
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            <span>Imprimir</span>
+          </Button>
+
+          <Button
             onClick={handleExportPdf}
             disabled={exportingPdf}
             className="bg-tinta hover:bg-tinta/90 text-marfim rounded-xl shadow-md px-5"
@@ -618,6 +628,9 @@ const RecipeDetail: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Print-only layout (portaled into #print-root, revealed only by @media print) */}
+      <PrintRecipe recipe={recipe} coverUrl={coverUrl} />
     </div>
   )
 }

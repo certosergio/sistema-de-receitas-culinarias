@@ -50,7 +50,11 @@ const App = () => (
               <Route path="/favoritos" element={<Favoritos />} />
               <Route path="/colecoes" element={<Colecoes />} />
               <Route path="/colecoes/:id" element={<ColecaoDetail />} />
+              <Route path="/planejador" element={<Planejador />} />
             </Route>
+
+            {/* Public share route (no auth required) */}
+            <Route path="/compartilhar/:shareToken" element={<Compartilhar />} />
 
             {/* 404 Fallback */}
             <Route path="*" element={<NotFound />} />

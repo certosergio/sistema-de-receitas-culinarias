@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-16T21:50:17.092Z",
+  "generatedAt": "2026-08-16T22:00:42.381Z",
   "collections": [
     {
       "name": "users",
@@ -19,8 +19,14 @@
           "system": false
         },
         {
-          "name": "avatar",
-          "type": "file",
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "share_token",
+          "type": "text",
           "required": false,
           "system": false
         },
@@ -40,8 +46,9 @@
         }
       ],
       "indexes": [
-        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
-        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+        "CREATE INDEX idx_collections_user ON collections (user)",
+        "CREATE INDEX idx_collections_created ON collections (created DESC)",
+        "CREATE UNIQUE INDEX idx_collections_share_token ON collections (share_token) WHERE share_token != ''"
       ]
     },
     {
@@ -405,11 +412,18 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "share_token",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE INDEX idx_collections_user ON collections (user)",
-        "CREATE INDEX idx_collections_created ON collections (created DESC)"
+        "CREATE INDEX idx_collections_created ON collections (created DESC)",
+        "CREATE UNIQUE INDEX `idx_collections_share_token` ON `collections` (share_token) WHERE share_token != ''"
       ]
     },
     {
@@ -456,6 +470,66 @@
         "CREATE UNIQUE INDEX idx_collection_recipes_pair ON collection_recipes (collection, recipe)",
         "CREATE INDEX idx_collection_recipes_collection ON collection_recipes (collection)",
         "CREATE INDEX idx_collection_recipes_recipe ON collection_recipes (recipe)"
+      ]
+    },
+    {
+      "name": "meal_plans",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "date",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "meal_type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["cafe_da_manha", "almoco", "jantar"]
+        },
+        {
+          "name": "recipe",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "recipes"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_meal_plans_slot ON meal_plans (user, date, meal_type)",
+        "CREATE INDEX idx_meal_plans_user ON meal_plans (user)",
+        "CREATE INDEX idx_meal_plans_date ON meal_plans (date)",
+        "CREATE INDEX idx_meal_plans_recipe ON meal_plans (recipe)"
       ]
     }
   ]

@@ -81,11 +81,48 @@ export interface Collection {
   user: string
   name: string
   description?: string
+  share_token?: string
   expand?: {
     user?: User
   }
   created: string
   updated: string
+}
+
+/** Public (unauthenticated) shared collection view returned by /api/share/:token. */
+export interface SharedRecipe {
+  id: string
+  title: string
+  summary: string
+  category: string
+  technique: string
+  cover: string
+  difficulty: string
+  yield_quantity: number
+  yield_unit: string
+  portions: string
+  prep_minutes: number
+  cook_minutes: number
+  total_minutes: number
+  cost: number
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  ingredients: { name: string; quantity: string; unit: string }[]
+  method: string[]
+  tips: string
+}
+
+export interface SharedCollection {
+  collection: {
+    id: string
+    name: string
+    description: string
+    author: string
+    created: string
+  }
+  recipes: SharedRecipe[]
 }
 
 export interface CollectionRecipe {

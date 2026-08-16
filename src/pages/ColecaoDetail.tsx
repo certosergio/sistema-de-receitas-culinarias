@@ -1,11 +1,26 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Bookmark, ArrowLeft, Edit, Trash2, MoreVertical, Loader2, BookOpen } from 'lucide-react'
+import {
+  Bookmark,
+  ArrowLeft,
+  Edit,
+  Trash2,
+  MoreVertical,
+  Loader2,
+  BookOpen,
+  Share2,
+  Copy,
+  Link2,
+  Link2Off,
+  CheckCircle2,
+} from 'lucide-react'
 import {
   getCollectionById,
   getCollectionRecipes,
   updateCollection,
   deleteCollection,
+  enableCollectionSharing,
+  disableCollectionSharing,
 } from '@/services/collections'
 import { Collection, Recipe } from '@/types'
 import { RecipeCard } from '@/components/RecipeCard'
@@ -153,6 +168,66 @@ const ColecaoDetail: React.FC = () => {
 
   if (!collection) return null
 
+  const shareUrl = collection.share_token
+    ? `${window.location.origin}/compartilhar/${collection.share_token}`
+    : ''
+
+  const handleEnableShare = async () => {
+    setShareBusy(true)
+    try {
+      const updated = await enableCollectionSharing(collection.id)
+      setCollection(updated)
+      toast({ title: 'Compartilhamento ativado', description: 'Link público gerado com sucesso.' })
+    } catch (err) {
+      console.error('Erro ao ativar compartilhamento:', err)
+      toast({
+        title: 'Falha ao ativar',
+        description: 'Não foi possível gerar o link de compartilhamento.',
+        variant: 'destructive',
+      })
+    } finally {
+      setShareBusy(false)
+    }
+  }
+
+  const handleDisableShare = async () => {
+    setShareBusy(true)
+    try {
+      const updated = await disableCollectionSharing(collection.id)
+      setCollection(updated)
+      toast({ title: 'Compartilhamento desativado', description: 'O link público foi removido.' })
+    } catch (err) {
+      console.error('Erro ao desativar compartilhamento:', err)
+      toast({
+        title: 'Falha ao desativar',
+        description: 'Não foi possível desativar o compartilhamento.',
+        variant: 'destructive',
+      })
+    } finally {
+      setShareBusy(false)
+    }
+  }
+
+  const handleCopyLink = async () => {
+    if (!shareUrl) return
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      toast({
+        title: 'Link copiado',
+        description: 'O link foi copiado para a área de transferência.',
+      })
+    } catch (err) {
+      console.error('Erro ao copiar link:', err)
+      toast({
+        title: 'Não foi possível copiar',
+        description: 'Copie manualmente o link exibido.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       {/* TOP NAV */}
@@ -166,6 +241,15 @@ const ColecaoDetail: React.FC = () => {
         </Link>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShareOpen(true)}
+            className="hidden sm:inline-flex border-marfim-border bg-white text-tinta rounded-xl gap-2 h-10 text-xs font-semibold shadow-xs"
+          >
+            <Share2 className="w-3.5 h-3.5 text-bronze" />
+            <span>Compartilhar</span>
+          </Button>
+
           <Button
             variant="outline"
             onClick={openEdit}
@@ -189,6 +273,13 @@ const ColecaoDetail: React.FC = () => {
               align="end"
               className="w-48 bg-white border-marfim-border rounded-xl shadow-dropdown p-1.5"
             >
+              <DropdownMenuItem
+                onClick={() => setShareOpen(true)}
+                className="cursor-pointer text-xs rounded-lg py-2 flex items-center gap-2"
+              >
+                <Share2 className="w-3.5 h-3.5 text-bronze" />
+                <span>Compartilhar</span>
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={openEdit}
                 className="cursor-pointer text-xs rounded-lg py-2 flex items-center gap-2"
@@ -338,13 +429,93 @@ const ColecaoDetail: React.FC = () => {
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
+              className="bg-erro hover:bg-erro/90 text-white rounded-xl"
             >
               {deleting ? 'Excluindo...' : 'Sim, excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* SHARE DIALOG */}
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent className="bg-white rounded-2xl border-marfim-border sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl font-bold text-tinta flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-bronze" />
+              Compartilhar Coleção
+            </DialogTitle>
+            <DialogDescription className="text-xs text-tinta-sec">
+              Gere um link público para que qualquer pessoa possa visualizar as receitas desta
+              coleção — sem precisar de conta.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-4">
+            {shareUrl ? (
+              <>
+                <div>
+                  <Label className="label-caps block mb-1.5">Link público</Label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2 px-3 h-11 rounded-xl bg-marfim/40 border border-marfim-border text-xs text-tinta font-mono overflow-hidden">
+                      <Link2 className="w-4 h-4 text-verde shrink-0" />
+                      <span className="truncate">{shareUrl}</span>
+                    </div>
+                    <Button
+                      onClick={handleCopyLink}
+                      className="bg-verde hover:bg-verde-hover text-white rounded-xl h-11 px-3 gap-1.5 shrink-0"
+                    >
+                      {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      <span className="text-xs">{copied ? 'Copiado' : 'Copiar'}</span>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 leading-relaxed">
+                  Qualquer pessoa com este link poderá ver as receitas da coleção. Não o compartilhe
+                  publicamente se preferir manter privacidade.
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={handleDisableShare}
+                  disabled={shareBusy}
+                  className="w-full border-red-200 text-red-600 hover:bg-red-50 rounded-xl h-10 gap-2"
+                >
+                  {shareBusy ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Link2Off className="w-4 h-4" />
+                  )}
+                  <span>Desativar compartilhamento</span>
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-bronze-subtle border border-bronze/30 flex items-center justify-center mx-auto">
+                  <Link2 className="w-8 h-8 text-bronze" />
+                </div>
+                <p className="text-sm text-tinta-sec leading-relaxed">
+                  O compartilhamento está desativado. Ao ativá-lo, um link único será gerado para
+                  acesso público a esta coleção.
+                </p>
+                <Button
+                  onClick={handleEnableShare}
+                  disabled={shareBusy}
+                  className="bg-verde hover:bg-verde-hover text-white rounded-xl h-10 px-5 gap-2"
+                >
+                  {shareBusy ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Share2 className="w-4 h-4" />
+                  )}
+                  <span>Ativar compartilhamento</span>
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

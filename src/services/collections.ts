@@ -1,5 +1,5 @@
 import pb from '@/lib/pocketbase/client'
-import { Collection, Recipe } from '@/types'
+import { Collection, Recipe, SharedCollection } from '@/types'
 
 export interface CollectionWithCount extends Collection {
   recipeCount?: number
@@ -52,11 +52,12 @@ export async function createCollection(data: {
 
 export async function updateCollection(
   id: string,
-  data: { name?: string; description?: string },
+  data: { name?: string; description?: string; share_token?: string | null },
 ): Promise<Collection> {
   return await pb.collection('collections').update<Collection>(id, {
     name: data.name?.trim(),
     description: data.description?.trim(),
+    share_token: data.share_token === null ? '' : data.share_token,
   })
 }
 
@@ -116,4 +117,39 @@ export async function toggleRecipeInCollection(
   }
   await addRecipeToCollection(collectionId, recipeId)
   return true
+}
+
+/** Short, URL-safe token (base36, ~10 chars). */
+export function generateShareToken(): string {
+  return Array.from({ length: 10 }, () => Math.floor(Math.random() * 36).toString(36)).join('')
+}
+
+/** Enables sharing on a collection, returning the updated record. */
+export async function enableCollectionSharing(collectionId: string): Promise<Collection> {
+  const token = generateShareToken()
+  return await pb.collection('collections').update<Collection>(collectionId, {
+    share_token: token,
+  })
+}
+
+/** Disables sharing on a collection (clears the token). */
+export async function disableCollectionSharing(collectionId: string): Promise<Collection> {
+  return await pb.collection('collections').update<Collection>(collectionId, {
+    share_token: '',
+  })
+}
+
+/** Public (unauthenticated) fetch of a shared collection by token. */
+export async function fetchSharedCollection(token: string): Promise<SharedCollection> {
+  const res = await pb.send(`/api/share/${encodeURIComponent(token)}`, {
+    method: 'GET',
+  })
+  const data = res as SharedCollection
+  // Resolve cover relative paths to absolute URLs against the PocketBase base URL.
+  const base = pb.baseUrl.replace(/\/$/, '')
+  data.recipes = (data.recipes || []).map((r) => ({
+    ...r,
+    cover: r.cover && !/^https?:\/\//i.test(r.cover) ? base + r.cover : r.cover,
+  }))
+  return data
 }

@@ -87,3 +87,86 @@
     border-color: #b98a4f;
   }
 }
+
+/* ===================== PRINT LAYOUT (@media print) ===================== */
+/* An optimized A4 layout for the recipe ficha técnica. On screen nothing
+   changes — only when window.print() fires. The app chrome (sidebar,
+   topbar, buttons, interactive elements) is hidden and the print-only
+   #print-root is revealed. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm 16mm 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #1c1b17 !important;
+  }
+
+  /* Hide the application shell entirely. */
+  body > #root > * {
+    visibility: hidden;
+  }
+
+  /* Keep the print-root container invisible on screen. */
+  #print-root {
+    display: none;
+  }
+  @media print {
+    #print-root {
+      display: block;
+    }
+  }
+
+  /* Reveal only the print root (and its descendants). */
+  #print-root,
+  #print-root * {
+    visibility: visible;
+  }
+  #print-root {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    background: #ffffff !important;
+    color: #1c1b17 !important;
+  }
+
+  /* Force print-friendly palette everywhere inside the print root. */
+  #print-root .print-bg-white {
+    background: #ffffff !important;
+  }
+  #print-root .print-text-dark {
+    color: #1c1b17 !important;
+  }
+  #print-root .print-text-muted {
+    color: #6b675e !important;
+  }
+  #print-root .print-border {
+    border-color: #d8d2c6 !important;
+  }
+  #print-root .print-accent {
+    color: #b98a4f !important;
+  }
+
+  /* Avoid awkward section breaks. */
+  #print-root .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #print-root h1,
+  #print-root h2,
+  #print-root h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Images stay crisp and contained. */
+  #print-root img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
