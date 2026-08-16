@@ -75,6 +75,11 @@ const ColecaoDetail: React.FC = () => {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  // Share dialog
+  const [shareOpen, setShareOpen] = useState(false)
+  const [shareBusy, setShareBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+
   const load = useCallback(async () => {
     if (!id) return
     try {

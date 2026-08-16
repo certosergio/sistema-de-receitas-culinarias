@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-16T22:00:42.381Z",
+  "generatedAt": "2026-08-16T22:14:18.984Z",
   "collections": [
     {
       "name": "users",
@@ -19,14 +19,8 @@
           "system": false
         },
         {
-          "name": "description",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "share_token",
-          "type": "text",
+          "name": "avatar",
+          "type": "file",
           "required": false,
           "system": false
         },
@@ -46,9 +40,8 @@
         }
       ],
       "indexes": [
-        "CREATE INDEX idx_collections_user ON collections (user)",
-        "CREATE INDEX idx_collections_created ON collections (created DESC)",
-        "CREATE UNIQUE INDEX idx_collections_share_token ON collections (share_token) WHERE share_token != ''"
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
       ]
     },
     {

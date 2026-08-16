@@ -18,6 +18,8 @@ import Techniques from '@/pages/Techniques'
 import Favoritos from '@/pages/Favoritos'
 import Colecoes from '@/pages/Colecoes'
 import ColecaoDetail from '@/pages/ColecaoDetail'
+import Planejador from '@/pages/Planejador'
+import Compartilhar from '@/pages/Compartilhar'
 import NotFound from '@/pages/NotFound'
 
 const App = () => (

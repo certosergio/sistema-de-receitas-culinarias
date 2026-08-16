@@ -7,7 +7,7 @@ import {
   Search,
   Loader2,
   Trash2,
-  CalendarDays,
+  Calendar,
   Plus,
 } from 'lucide-react'
 import {

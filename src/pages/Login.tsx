@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { UtensilsCrossed, AlertCircle, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -176,16 +176,6 @@ const Login: React.FC = () => {
               )}
             </Button>
           </form>
-
-          {/* Quick helper tip */}
-          <div className="mt-6 pt-5 border-t border-marfim-border text-center">
-            <p className="text-sm text-tinta-sec">
-              Ainda não tem conta?{' '}
-              <Link to="/registro" className="text-bronze font-semibold hover:underline">
-                Cadastre-se gratuitamente
-              </Link>
-            </p>
-          </div>
         </div>
 
         {/* Demo access badge */}

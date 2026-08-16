@@ -9,6 +9,7 @@ import {
   Flame,
   Heart,
   Bookmark,
+  CalendarDays,
   Plus,
   LogOut,
   Menu,
