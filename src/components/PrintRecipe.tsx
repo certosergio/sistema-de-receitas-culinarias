@@ -46,7 +46,7 @@ const fmtDate = (iso: string) => {
  * on screen (the container is hidden by default via the print stylesheet,
  * but we also keep it visually hidden on screen to be safe).
  */
-const PrintRecipe: React.FC<PrintPortalProps> = ({ recipe, coverUrl }) => {
+export const PrintRecipe: React.FC<PrintPortalProps> = ({ recipe, coverUrl }) => {
   const totalTime =
     (recipe.prep_minutes || 0) + (recipe.cook_minutes || 0) || recipe.total_minutes || 0
 
@@ -246,5 +246,3 @@ const PrintRecipe: React.FC<PrintPortalProps> = ({ recipe, coverUrl }) => {
     document.getElementById('print-root')!,
   )
 }
-
-export default PrintRecipe
