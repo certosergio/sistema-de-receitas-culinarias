@@ -65,6 +65,41 @@ export interface Recipe {
   updated: string
 }
 
+export interface Favorite {
+  id: string
+  user: string
+  recipe: string
+  expand?: {
+    recipe?: Recipe
+  }
+  created: string
+  updated: string
+}
+
+export interface Collection {
+  id: string
+  user: string
+  name: string
+  description?: string
+  expand?: {
+    user?: User
+  }
+  created: string
+  updated: string
+}
+
+export interface CollectionRecipe {
+  id: string
+  collection: string
+  recipe: string
+  expand?: {
+    recipe?: Recipe
+    collection?: Collection
+  }
+  created: string
+  updated: string
+}
+
 export interface RecipeFormData {
   title: string
   slug?: string

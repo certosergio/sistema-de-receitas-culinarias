@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-16T20:53:24.912Z",
+  "generatedAt": "2026-08-16T21:50:17.092Z",
   "collections": [
     {
       "name": "users",
@@ -314,6 +314,148 @@
         "CREATE INDEX idx_recipes_difficulty ON recipes (difficulty)",
         "CREATE INDEX idx_recipes_total_minutes ON recipes (total_minutes)",
         "CREATE INDEX idx_recipes_created ON recipes (created DESC)"
+      ]
+    },
+    {
+      "name": "favorites",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "recipe",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "recipes"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_favorites_user_recipe ON favorites (user, recipe)",
+        "CREATE INDEX idx_favorites_user ON favorites (user)",
+        "CREATE INDEX idx_favorites_recipe ON favorites (recipe)"
+      ]
+    },
+    {
+      "name": "collections",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_collections_user ON collections (user)",
+        "CREATE INDEX idx_collections_created ON collections (created DESC)"
+      ]
+    },
+    {
+      "name": "collection_recipes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && collection.user = @request.auth.id",
+        "view": "@request.auth.id != '' && collection.user = @request.auth.id",
+        "create": "@request.auth.id != '' && collection.user = @request.auth.id",
+        "update": "@request.auth.id != '' && collection.user = @request.auth.id",
+        "delete": "@request.auth.id != '' && collection.user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "collection",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "collections"
+        },
+        {
+          "name": "recipe",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "recipes"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_collection_recipes_pair ON collection_recipes (collection, recipe)",
+        "CREATE INDEX idx_collection_recipes_collection ON collection_recipes (collection)",
+        "CREATE INDEX idx_collection_recipes_recipe ON collection_recipes (recipe)"
       ]
     }
   ]

@@ -7,6 +7,8 @@ export interface RecipeFilterOptions {
   techniques?: string[]
   difficulty?: string
   sort?: string
+  /** Ingredients to match (partial, case-insensitive, OR semantics). */
+  ingredients?: string[]
 }
 
 export function generateSlug(text: string): string {
@@ -46,6 +48,12 @@ export async function getRecipes(options: RecipeFilterOptions = {}): Promise<Rec
     filterParts.push(`difficulty = "${options.difficulty}"`)
   }
 
+  // Ingredient search is matched client-side against the JSON `ingredients`
+  // array because PocketBase's ~ operator cannot reach inside JSON arrays.
+  const ingredientTerms = (options.ingredients || [])
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean)
+
   let sort = '-created'
   if (options.sort) {
     switch (options.sort) {
@@ -69,12 +77,27 @@ export async function getRecipes(options: RecipeFilterOptions = {}): Promise<Rec
     }
   }
 
-  return await pb.collection('recipes').getFullList<Recipe>({
+  const list = await pb.collection('recipes').getFullList<Recipe>({
     filter: filterParts.length > 0 ? filterParts.join(' && ') : undefined,
     sort,
     expand: 'category,technique,author',
     requestKey: null,
   })
+
+  // Client-side ingredient filtering (OR over terms; partial match on name).
+  if (ingredientTerms.length > 0) {
+    return list.filter((r) => {
+      if (!Array.isArray(r.ingredients) || r.ingredients.length === 0) return false
+      return ingredientTerms.some((term) =>
+        r.ingredients!.some((ing) => {
+          const name = (ing.name || '').toLowerCase()
+          return name.includes(term)
+        }),
+      )
+    })
+  }
+
+  return list
 }
 
 export async function getRecentRecipes(limit: number = 6): Promise<Recipe[]> {

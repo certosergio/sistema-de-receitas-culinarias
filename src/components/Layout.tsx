@@ -7,6 +7,8 @@ import {
   BookOpen,
   FolderTree,
   Flame,
+  Heart,
+  Bookmark,
   Plus,
   LogOut,
   Menu,
@@ -54,6 +56,8 @@ const Layout: React.FC = () => {
     { label: 'Receitas', to: '/receitas', icon: BookOpen },
     { label: 'Categorias', to: '/categorias', icon: FolderTree },
     { label: 'Técnicas de Preparo', to: '/tecnicas', icon: Flame },
+    { label: 'Favoritos', to: '/favoritos', icon: Heart },
+    { label: 'Coleções', to: '/colecoes', icon: Bookmark },
   ]
 
   const isNavActive = (path: string) => {

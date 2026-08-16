@@ -22,7 +22,10 @@ import {
   User,
   Loader2,
   CheckCircle2,
+  Download,
 } from 'lucide-react'
+import { RecipeActions } from '@/components/RecipeActions'
+import { exportRecipePdf } from '@/lib/recipePdf'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -52,6 +55,30 @@ const RecipeDetail: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [exportingPdf, setExportingPdf] = useState(false)
+
+  const handleExportPdf = async () => {
+    if (!recipe) return
+    setExportingPdf(true)
+    // Defer to next tick so the spinner state can render before the CPU-bound work.
+    try {
+      await new Promise((r) => setTimeout(r, 50))
+      exportRecipePdf(recipe)
+      toast({
+        title: 'PDF gerado',
+        description: 'A ficha técnica foi exportada com sucesso.',
+      })
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err)
+      toast({
+        title: 'Falha na exportação',
+        description: 'Não foi possível gerar o PDF. Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setExportingPdf(false)
+    }
+  }
 
   useEffect(() => {
     async function loadRecipe() {
@@ -143,6 +170,23 @@ const RecipeDetail: React.FC = () => {
             <Edit className="w-3.5 h-3.5 text-bronze" />
             <span>Editar Receita</span>
           </Button>
+
+          <Button
+            variant="outline"
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="hidden sm:inline-flex border-marfim-border bg-white text-tinta rounded-xl gap-2 h-10 text-xs font-semibold shadow-xs"
+          >
+            {exportingPdf ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-bronze" />
+            ) : (
+              <Download className="w-3.5 h-3.5 text-bronze" />
+            )}
+            <span>{exportingPdf ? 'Gerando...' : 'Exportar PDF'}</span>
+          </Button>
+
+          {/* Favorite & collection actions */}
+          <RecipeActions recipeId={recipe.id} size="md" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -516,6 +560,19 @@ const RecipeDetail: React.FC = () => {
         </Button>
 
         <div className="flex items-center gap-3">
+          <Button
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="bg-tinta hover:bg-tinta/90 text-marfim rounded-xl shadow-md px-5"
+          >
+            {exportingPdf ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            <span>{exportingPdf ? 'Gerando PDF...' : 'Exportar PDF'}</span>
+          </Button>
+
           <Button
             onClick={() => navigate(`/receitas/${recipe.id}/editar`)}
             className="bg-verde hover:bg-verde-hover text-white rounded-xl shadow-md px-5"

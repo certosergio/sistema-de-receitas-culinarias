@@ -17,6 +17,7 @@ import {
   Check,
   ChefHat,
   ArrowUpDown,
+  Salad,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,6 +47,7 @@ const RecipesList: React.FC = () => {
   const selectedTechniqueParam = searchParams.get('tecnica') || ''
   const selectedDifficulty = searchParams.get('dificuldade') || 'all'
   const sortBy = searchParams.get('ordem') || 'recentes'
+  const ingredientsParam = searchParams.get('ingredientes') || ''
 
   // Selected categories/techniques as arrays
   const selectedCategories = useMemo(() => {
@@ -56,12 +58,26 @@ const RecipesList: React.FC = () => {
     return selectedTechniqueParam ? selectedTechniqueParam.split(',').filter(Boolean) : []
   }, [selectedTechniqueParam])
 
+  // Ingredient search terms (non-empty, trimmed, lowercased for display original)
+  const selectedIngredients = useMemo(() => {
+    return ingredientsParam
+      ? ingredientsParam
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
+  }, [ingredientsParam])
+
+  // Local input state for the ingredient field (committed to URL on Enter/comma)
+  const [ingredientInput, setIngredientInput] = useState('')
+
   // Count active filters
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +
     selectedCategories.length +
     selectedTechniques.length +
-    (selectedDifficulty !== 'all' ? 1 : 0)
+    (selectedDifficulty !== 'all' ? 1 : 0) +
+    selectedIngredients.length
 
   // Fetch meta categories and techniques
   useEffect(() => {
@@ -86,6 +102,7 @@ const RecipesList: React.FC = () => {
         categories: selectedCategories,
         techniques: selectedTechniques,
         difficulty: selectedDifficulty,
+        ingredients: selectedIngredients,
         sort: sortBy,
       })
       setRecipes(list)
@@ -94,7 +111,14 @@ const RecipesList: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, selectedCategories, selectedTechniques, selectedDifficulty, sortBy])
+  }, [
+    searchQuery,
+    selectedCategories,
+    selectedTechniques,
+    selectedDifficulty,
+    selectedIngredients,
+    sortBy,
+  ])
 
   useEffect(() => {
     loadRecipes()
@@ -152,7 +176,43 @@ const RecipesList: React.FC = () => {
     updateUrlParams({ ordem: newSort })
   }
 
+  // Ingredient handlers
+  const commitIngredients = (next: string[]) => {
+    updateUrlParams({
+      ingredientes: next.length > 0 ? next.join(',') : null,
+    })
+  }
+
+  const addIngredient = (raw: string) => {
+    const term = raw.trim().toLowerCase()
+    if (!term) return
+    if (selectedIngredients.includes(term)) {
+      setIngredientInput('')
+      return
+    }
+    commitIngredients([...selectedIngredients, term])
+    setIngredientInput('')
+  }
+
+  const removeIngredient = (term: string) => {
+    commitIngredients(selectedIngredients.filter((i) => i !== term))
+  }
+
+  const handleIngredientKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addIngredient(ingredientInput)
+    } else if (e.key === 'Backspace' && ingredientInput === '' && selectedIngredients.length > 0) {
+      removeIngredient(selectedIngredients[selectedIngredients.length - 1])
+    }
+  }
+
+  const handleIngredientBlur = () => {
+    if (ingredientInput.trim()) addIngredient(ingredientInput)
+  }
+
   const clearAllFilters = () => {
+    setIngredientInput('')
     setSearchParams(new URLSearchParams(), { replace: true })
   }
 
@@ -214,7 +274,7 @@ const RecipesList: React.FC = () => {
           <Search className="w-4 h-4 text-tinta-ter absolute left-3.5 top-1/2 -translate-y-1/2" />
           <Input
             type="search"
-            placeholder="Buscar por título, resumo ou ingredientes..."
+            placeholder="Buscar por título ou resumo..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 h-11 bg-white border-marfim-border rounded-xl focus-visible:ring-verde text-sm shadow-xs"
@@ -227,6 +287,20 @@ const RecipesList: React.FC = () => {
               <X className="w-4 h-4" />
             </button>
           )}
+        </div>
+
+        {/* Ingredient search input */}
+        <div className="relative w-full sm:max-w-md">
+          <Salad className="w-4 h-4 text-bronze absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Input
+            type="text"
+            placeholder="Buscar por ingredientes (ex.: batata, cebola, alho)"
+            value={ingredientInput}
+            onChange={(e) => setIngredientInput(e.target.value)}
+            onKeyDown={handleIngredientKeyDown}
+            onBlur={handleIngredientBlur}
+            className="pl-10 h-11 bg-white border-marfim-border rounded-xl focus-visible:ring-bronze text-sm shadow-xs"
+          />
         </div>
 
         {/* Sort & Mobile filter button */}
@@ -333,6 +407,22 @@ const RecipesList: React.FC = () => {
               </button>
             </Badge>
           )}
+
+          {selectedIngredients.map((term) => (
+            <Badge
+              key={term}
+              className="bg-bronze-subtle text-tinta border border-bronze/30 text-xs gap-1 pl-2.5 pr-1.5 py-1 capitalize"
+            >
+              <Salad className="w-3 h-3 text-bronze" />
+              {term}
+              <button
+                onClick={() => removeIngredient(term)}
+                className="hover:text-tinta-sec rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
 
           <Button
             variant="ghost"

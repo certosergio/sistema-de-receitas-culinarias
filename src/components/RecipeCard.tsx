@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Recipe } from '@/types'
 import { getRecipeCoverUrl, isRecipeComplete } from '@/services/recipes'
 import { RecipePlaceholder } from './RecipePlaceholder'
+import { RecipeActions } from './RecipeActions'
 import { Clock, Users, Award, ChefHat } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
@@ -66,6 +67,11 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
               <span>Ficha Completa</span>
             </span>
           )}
+        </div>
+
+        {/* Favorite & collection actions (top-right, below badges) */}
+        <div className="absolute top-3 right-3 mt-7 pointer-events-auto">
+          <RecipeActions recipeId={recipe.id} size="sm" />
         </div>
       </div>
 
