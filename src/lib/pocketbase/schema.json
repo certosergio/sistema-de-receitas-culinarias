@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-16T22:14:18.984Z",
+  "generatedAt": "2026-08-16T23:03:01.609Z",
   "collections": [
     {
       "name": "users",
@@ -303,6 +303,36 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "contains_gluten",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contains_dairy",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contains_eggs",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contains_fish",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contains_honey",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

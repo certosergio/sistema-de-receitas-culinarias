@@ -6,6 +6,7 @@ import { RecipePlaceholder } from './RecipePlaceholder'
 import { RecipeActions } from './RecipeActions'
 import { Clock, Users, Award, ChefHat } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { RecipeCardDietary } from './RecipeCardDietary'
 
 interface RecipeCardProps {
   recipe: Recipe
@@ -73,8 +74,12 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
         <div className="absolute top-3 right-3 mt-7 pointer-events-auto">
           <RecipeActions recipeId={recipe.id} size="sm" />
         </div>
-      </div>
 
+        {/* Dietary icons (bottom-left of cover) */}
+        <div className="absolute bottom-3 left-3 pointer-events-none">
+          <RecipeCardDietary state={recipe} />
+        </div>
+      </div>
       {/* Card Content */}
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>

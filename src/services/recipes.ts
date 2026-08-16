@@ -9,6 +9,8 @@ export interface RecipeFilterOptions {
   sort?: string
   /** Ingredients to match (partial, case-insensitive, OR semantics). */
   ingredients?: string[]
+  /** Dietary facet ids: 'vegana' | 'sem-gluten' | 'sem-laticinios'. */
+  dietary?: string[]
 }
 
 export function generateSlug(text: string): string {
@@ -84,9 +86,11 @@ export async function getRecipes(options: RecipeFilterOptions = {}): Promise<Rec
     requestKey: null,
   })
 
+  let result = list
+
   // Client-side ingredient filtering (OR over terms; partial match on name).
   if (ingredientTerms.length > 0) {
-    return list.filter((r) => {
+    result = result.filter((r) => {
       if (!Array.isArray(r.ingredients) || r.ingredients.length === 0) return false
       return ingredientTerms.some((term) =>
         r.ingredients!.some((ing) => {
@@ -97,7 +101,35 @@ export async function getRecipes(options: RecipeFilterOptions = {}): Promise<Rec
     })
   }
 
-  return list
+  // Client-side dietary facets (AND across selected facets).
+  result = applyDietaryFilter(result, options.dietary)
+
+  return result
+}
+
+// --- Dietary restriction helpers (client-side filtering) ---
+// Bool fields can't be combined with the `~` operator in the way the catalog
+// needs (negated AND semantics across multiple facets), so we filter the
+// already-fetched list in memory.
+
+function matchesDietary(r: Recipe, facetId: string): boolean {
+  switch (facetId) {
+    case 'vegana':
+      // No animal-origin flag set.
+      return !r.contains_dairy && !r.contains_eggs && !r.contains_fish && !r.contains_honey
+    case 'sem-gluten':
+      return !r.contains_gluten
+    case 'sem-laticinios':
+      return !r.contains_dairy
+    default:
+      return true
+  }
+}
+
+function applyDietaryFilter(list: Recipe[], dietary: string[] | undefined): Recipe[] {
+  const facets = (dietary || []).map((d) => d.trim()).filter(Boolean)
+  if (facets.length === 0) return list
+  return list.filter((r) => facets.every((f) => matchesDietary(r, f)))
 }
 
 export async function getRecentRecipes(limit: number = 6): Promise<Recipe[]> {
@@ -152,6 +184,13 @@ export async function createRecipe(formData: RecipeFormData): Promise<Recipe> {
   if (formData.tips) payload.append('tips', formData.tips)
   if (user?.id) payload.append('author', user.id)
 
+  // Dietary restriction flags (migration 0006).
+  payload.append('contains_gluten', String(Boolean(formData.contains_gluten)))
+  payload.append('contains_dairy', String(Boolean(formData.contains_dairy)))
+  payload.append('contains_eggs', String(Boolean(formData.contains_eggs)))
+  payload.append('contains_fish', String(Boolean(formData.contains_fish)))
+  payload.append('contains_honey', String(Boolean(formData.contains_honey)))
+
   if (formData.coverFile) {
     payload.append('cover', formData.coverFile)
   }
@@ -189,6 +228,13 @@ export async function updateRecipe(id: string, formData: RecipeFormData): Promis
   payload.append('method', JSON.stringify(cleanMethod))
 
   payload.append('tips', formData.tips || '')
+
+  // Dietary restriction flags (migration 0006).
+  payload.append('contains_gluten', String(Boolean(formData.contains_gluten)))
+  payload.append('contains_dairy', String(Boolean(formData.contains_dairy)))
+  payload.append('contains_eggs', String(Boolean(formData.contains_eggs)))
+  payload.append('contains_fish', String(Boolean(formData.contains_fish)))
+  payload.append('contains_honey', String(Boolean(formData.contains_honey)))
 
   if (formData.coverFile) {
     payload.append('cover', formData.coverFile)

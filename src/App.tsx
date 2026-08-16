@@ -13,6 +13,7 @@ import Register from '@/pages/Register'
 import RecipesList from '@/pages/RecipesList'
 import RecipeDetail from '@/pages/RecipeDetail'
 import RecipeForm from '@/pages/RecipeForm'
+import ImportarReceita from '@/pages/ImportarReceita'
 import Categories from '@/pages/Categories'
 import Techniques from '@/pages/Techniques'
 import Favoritos from '@/pages/Favoritos'
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/receitas/nova" element={<RecipeForm />} />
               <Route path="/receitas/:id" element={<RecipeDetail />} />
               <Route path="/receitas/:id/editar" element={<RecipeForm />} />
+              <Route path="/importar" element={<ImportarReceita />} />
               <Route path="/categorias" element={<Categories />} />
               <Route path="/tecnicas" element={<Techniques />} />
               <Route path="/favoritos" element={<Favoritos />} />

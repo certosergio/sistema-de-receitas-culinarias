@@ -5,6 +5,10 @@ import { getCategories } from '@/services/categories'
 import { getTechniques } from '@/services/techniques'
 import { Category, Technique, IngredientItem, RecipeFormData } from '@/types'
 import { RecipePlaceholder } from '@/components/RecipePlaceholder'
+import ImportRecipeDialog from '@/components/ImportRecipeDialog'
+import { DietaryChips } from '@/components/DietaryBadges'
+import { emptyDietary, type DietaryFlagKey, type DietaryState } from '@/lib/dietary'
+import type { ParsedRecipe } from '@/lib/recipeImport'
 import {
   ArrowLeft,
   Upload,
@@ -24,6 +28,7 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
+  Wand2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -68,6 +73,12 @@ const RecipeForm: React.FC = () => {
   const [fat, setFat] = useState<number | string>('')
   const [tips, setTips] = useState('')
 
+  // Dietary restriction flags (migration 0006).
+  const [dietary, setDietary] = useState<Required<DietaryState>>(emptyDietary())
+
+  // Import-from-URL dialog.
+  const [importOpen, setImportOpen] = useState(false)
+
   // Dynamic Lists
   const [ingredients, setIngredients] = useState<IngredientItem[]>([
     { name: '', quantity: '', unit: 'g' },
@@ -110,6 +121,14 @@ const RecipeForm: React.FC = () => {
           setCarbs(rec.carbs !== undefined ? rec.carbs : '')
           setFat(rec.fat !== undefined ? rec.fat : '')
           setTips(rec.tips || '')
+
+          setDietary({
+            contains_gluten: Boolean(rec.contains_gluten),
+            contains_dairy: Boolean(rec.contains_dairy),
+            contains_eggs: Boolean(rec.contains_eggs),
+            contains_fish: Boolean(rec.contains_fish),
+            contains_honey: Boolean(rec.contains_honey),
+          })
 
           if (Array.isArray(rec.ingredients) && rec.ingredients.length > 0) {
             setIngredients(rec.ingredients)
@@ -236,6 +255,37 @@ const RecipeForm: React.FC = () => {
     setMethod(copy)
   }
 
+  // Dietary toggle handler
+  const handleDietaryChange = (key: DietaryFlagKey, value: boolean) => {
+    setDietary((prev) => ({ ...prev, [key]: value }))
+  }
+
+  // Apply imported recipe to the form fields (user can still edit before save).
+  const handleImportConfirm = (parsed: ParsedRecipe) => {
+    if (parsed.title) setTitle(parsed.title)
+    if (parsed.summary) setSummary(parsed.summary)
+    if (parsed.yield_quantity !== undefined) setYieldQuantity(parsed.yield_quantity)
+    if (parsed.yield_unit) setYieldUnit(parsed.yield_unit as typeof yieldUnit)
+    if (parsed.portions) setPortions(parsed.portions)
+    if (parsed.prep_minutes !== undefined && parsed.prep_minutes !== '')
+      setPrepMinutes(parsed.prep_minutes)
+    if (parsed.cook_minutes !== undefined && parsed.cook_minutes !== '')
+      setCookMinutes(parsed.cook_minutes)
+    if (parsed.difficulty) setDifficulty(parsed.difficulty as typeof difficulty)
+    if (parsed.tips) setTips(parsed.tips)
+    if (Array.isArray(parsed.ingredients) && parsed.ingredients.length > 0) {
+      setIngredients(parsed.ingredients)
+    }
+    if (Array.isArray(parsed.method) && parsed.method.length > 0) {
+      setMethod(parsed.method)
+    }
+    toast({
+      title: 'Receita preenchida',
+      description: 'Revise os campos importados e ajuste antes de salvar.',
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   // Validation
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -301,6 +351,11 @@ const RecipeForm: React.FC = () => {
       ingredients,
       method,
       tips,
+      contains_gluten: dietary.contains_gluten,
+      contains_dairy: dietary.contains_dairy,
+      contains_eggs: dietary.contains_eggs,
+      contains_fish: dietary.contains_fish,
+      contains_honey: dietary.contains_honey,
       coverFile,
       removeCover,
     }
@@ -379,6 +434,18 @@ const RecipeForm: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setImportOpen(true)}
+            disabled={submitting}
+            className="border-bronze/40 text-bronze hover:bg-bronze-subtle rounded-xl gap-2"
+            title="Importar de URL ou texto"
+          >
+            <Wand2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Importar Receita</span>
+          </Button>
+
           <Button
             type="button"
             variant="outline"
@@ -1033,6 +1100,23 @@ const RecipeForm: React.FC = () => {
             />
           </section>
 
+          {/* SECTION 6: RESTRIÇÕES ALIMENTARES */}
+          <section className="bg-white rounded-2xl p-6 sm:p-8 border border-marfim-border shadow-card space-y-6">
+            <div className="flex items-center gap-3 border-b border-marfim-border pb-4">
+              <div className="w-8 h-8 rounded-full bg-verde-subtle text-verde font-serif font-bold text-base flex items-center justify-center">
+                6
+              </div>
+              <div>
+                <h2 className="font-serif text-xl font-bold text-tinta">Restrições Alimentares</h2>
+                <p className="text-xs text-tinta-sec">
+                  Marque os alérgenos e ingredientes de origem animal presentes na receita.
+                </p>
+              </div>
+            </div>
+
+            <DietaryChips state={dietary} onChange={handleDietaryChange} />
+          </section>
+
           {/* FOOTER ACTIONS */}
           <div className="pt-4 flex items-center justify-between gap-4">
             <Button
@@ -1162,6 +1246,13 @@ const RecipeForm: React.FC = () => {
           </div>
         </aside>
       </div>
+
+      {/* Import recipe modal */}
+      <ImportRecipeDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onConfirm={handleImportConfirm}
+      />
     </div>
   )
 }

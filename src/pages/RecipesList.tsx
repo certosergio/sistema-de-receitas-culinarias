@@ -6,10 +6,12 @@ import { getTechniques } from '@/services/techniques'
 import { Recipe, Category, Technique } from '@/types'
 import { RecipeCard } from '@/components/RecipeCard'
 import { useRealtime } from '@/hooks/use-realtime'
+import { DIETARY_FACETS } from '@/lib/dietary'
 import {
   Search,
   SlidersHorizontal,
   Plus,
+  Upload,
   RotateCcw,
   Sparkles,
   Loader2,
@@ -18,6 +20,7 @@ import {
   ChefHat,
   ArrowUpDown,
   Salad,
+  Leaf,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +51,7 @@ const RecipesList: React.FC = () => {
   const selectedDifficulty = searchParams.get('dificuldade') || 'all'
   const sortBy = searchParams.get('ordem') || 'recentes'
   const ingredientsParam = searchParams.get('ingredientes') || ''
+  const dietaryParam = searchParams.get('restricoes') || ''
 
   // Selected categories/techniques as arrays
   const selectedCategories = useMemo(() => {
@@ -68,6 +72,16 @@ const RecipesList: React.FC = () => {
       : []
   }, [ingredientsParam])
 
+  // Selected dietary facets (ids: 'vegana' | 'sem-gluten' | 'sem-laticinios')
+  const selectedDietary = useMemo(() => {
+    return dietaryParam
+      ? dietaryParam
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
+  }, [dietaryParam])
+
   // Local input state for the ingredient field (committed to URL on Enter/comma)
   const [ingredientInput, setIngredientInput] = useState('')
 
@@ -77,7 +91,8 @@ const RecipesList: React.FC = () => {
     selectedCategories.length +
     selectedTechniques.length +
     (selectedDifficulty !== 'all' ? 1 : 0) +
-    selectedIngredients.length
+    selectedIngredients.length +
+    selectedDietary.length
 
   // Fetch meta categories and techniques
   useEffect(() => {
@@ -103,6 +118,7 @@ const RecipesList: React.FC = () => {
         techniques: selectedTechniques,
         difficulty: selectedDifficulty,
         ingredients: selectedIngredients,
+        dietary: selectedDietary,
         sort: sortBy,
       })
       setRecipes(list)
@@ -117,6 +133,7 @@ const RecipesList: React.FC = () => {
     selectedTechniques,
     selectedDifficulty,
     selectedIngredients,
+    selectedDietary,
     sortBy,
   ])
 
@@ -174,6 +191,17 @@ const RecipesList: React.FC = () => {
 
   const handleSortChange = (newSort: string) => {
     updateUrlParams({ ordem: newSort })
+  }
+
+  const toggleDietary = (facetId: string) => {
+    const current = new Set(selectedDietary)
+    if (current.has(facetId)) {
+      current.delete(facetId)
+    } else {
+      current.add(facetId)
+    }
+    const arr = Array.from(current)
+    updateUrlParams({ restricoes: arr.length > 0 ? arr.join(',') : null })
   }
 
   // Ingredient handlers
@@ -257,6 +285,13 @@ const RecipesList: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate('/importar')}
+            className="border-marfim-border text-verde hover:bg-verde hover:text-white shadow-xs font-medium rounded-xl px-4 py-5 gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Importar</span>
+          </Button>
           <Button
             onClick={() => navigate('/receitas/nova')}
             className="bg-bronze hover:bg-bronze-hover text-white shadow-md hover:shadow-lg font-medium rounded-xl px-4 py-5 gap-2"
@@ -424,6 +459,25 @@ const RecipesList: React.FC = () => {
             </Badge>
           ))}
 
+          {selectedDietary.map((facetId) => {
+            const facet = DIETARY_FACETS.find((f) => f.id === facetId)
+            return (
+              <Badge
+                key={facetId}
+                className="bg-verde-subtle text-verde border border-verde/30 text-xs gap-1 pl-2.5 pr-1.5 py-1"
+              >
+                <Leaf className="w-3 h-3" />
+                {facet ? facet.label : facetId}
+                <button
+                  onClick={() => toggleDietary(facetId)}
+                  className="hover:text-verde-hover rounded-full p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            )
+          })}
+
           <Button
             variant="ghost"
             size="sm"
@@ -476,6 +530,29 @@ const RecipesList: React.FC = () => {
                     }`}
                   >
                     {diff}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Restrições alimentares */}
+          <div className="space-y-2.5 pt-2 border-t border-marfim-border/70">
+            <span className="label-caps block text-[11px]">Restrições Alimentares</span>
+            <div className="flex flex-wrap gap-1.5">
+              {DIETARY_FACETS.map((facet) => {
+                const active = selectedDietary.includes(facet.id)
+                return (
+                  <button
+                    key={facet.id}
+                    onClick={() => toggleDietary(facet.id)}
+                    className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
+                      active
+                        ? 'bg-verde text-white shadow-xs'
+                        : 'bg-marfim-card text-tinta-sec hover:bg-marfim hover:text-tinta border border-marfim-border'
+                    }`}
+                  >
+                    {facet.label}
                   </button>
                 )
               })}

@@ -10,6 +10,7 @@ import {
   Heart,
   Bookmark,
   CalendarDays,
+  Upload,
   Plus,
   LogOut,
   Menu,
@@ -55,6 +56,7 @@ const Layout: React.FC = () => {
   const navItems = [
     { label: 'Painel', to: '/', icon: LayoutDashboard },
     { label: 'Receitas', to: '/receitas', icon: BookOpen },
+    { label: 'Importar', to: '/importar', icon: Upload },
     { label: 'Categorias', to: '/categorias', icon: FolderTree },
     { label: 'Técnicas de Preparo', to: '/tecnicas', icon: Flame },
     { label: 'Planejador', to: '/planejador', icon: CalendarDays },

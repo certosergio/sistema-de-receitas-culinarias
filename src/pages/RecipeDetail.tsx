@@ -26,6 +26,7 @@ import {
   Printer,
 } from 'lucide-react'
 import { RecipeActions } from '@/components/RecipeActions'
+import { DietaryBadges } from '@/components/DietaryBadges'
 import { exportRecipePdf } from '@/lib/recipePdf'
 import { PrintRecipe } from '@/components/PrintRecipe'
 import { Button } from '@/components/ui/button'
@@ -265,6 +266,8 @@ const RecipeDetail: React.FC = () => {
                 {recipe.difficulty}
               </span>
             )}
+            {/* Dietary badges overlaid on hero */}
+            <DietaryBadges state={recipe} />
           </div>
 
           {/* Title */}
