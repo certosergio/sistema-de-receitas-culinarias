@@ -745,7 +745,7 @@ const Planejador: React.FC = () => {
     setBusy(true)
     try {
       await clearMealPlansRange(weekStartIso, weekEndIso)
-      toast({ title: 'Semana limpa', description: 'Todas as refeições da semana foram removidas.' })
+      toast({ title: 'Semana esvaziada com sucesso.' })
       setClearOpen(false)
       load()
     } catch (err) {
@@ -1264,11 +1264,10 @@ const Planejador: React.FC = () => {
         <AlertDialogContent className="bg-white rounded-2xl border-marfim-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-serif text-xl text-tinta">
-              Limpar semana?
+              Esvaziar semana?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-tinta-sec text-sm">
-              Todas as refeições da semana de {formatWeekRange(weekStart)} serão removidas. Esta
-              ação não pode ser desfeita.
+              Tem certeza? Todas as refeições planejadas desta semana serão removidas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

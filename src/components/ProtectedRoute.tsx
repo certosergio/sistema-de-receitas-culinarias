@@ -9,9 +9,11 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-marfim flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-marfim dark:bg-[#15140F] flex flex-col items-center justify-center">
         <Loader2 className="w-10 h-10 animate-spin text-verde" />
-        <p className="font-serif italic text-tinta-sec mt-3">Carregando acervo culinário...</p>
+        <p className="font-serif italic text-tinta-sec dark:text-[#B5AE9F] mt-3">
+          Carregando acervo culinário...
+        </p>
       </div>
     )
   }

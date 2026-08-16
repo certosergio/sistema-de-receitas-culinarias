@@ -48,7 +48,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
         )}
 
         {/* Gradient Veil */}
-        <div className="absolute inset-0 bg-gradient-to-t from-tinta/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-tinta/60 via-transparent to-transparent opacity-60 dark:opacity-80 dark:group-hover:opacity-60 group-hover:opacity-40 transition-opacity" />
 
         {/* Badges on Top */}
         <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 pointer-events-none">
@@ -86,32 +86,32 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
           {/* Category & Technique Chips */}
           <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
             {recipe.expand?.category && (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-marfim-card text-tinta-sec border border-marfim-border">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-marfim-card dark:bg-[#221F18] text-tinta-sec dark:text-[#B5AE9F] border border-marfim-border dark:border-[#322F26]">
                 {recipe.expand.category.name}
               </span>
             )}
             {recipe.expand?.technique && (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-verde-subtle text-verde border border-verde/20">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-verde-subtle dark:bg-verde-dark-subtle text-verde dark:text-[#A9C4B5] border border-verde/20 dark:border-verde/40">
                 {recipe.expand.technique.name}
               </span>
             )}
           </div>
 
           {/* Title */}
-          <h3 className="font-serif text-xl font-bold text-tinta leading-snug line-clamp-2 group-hover:text-verde transition-colors">
+          <h3 className="font-serif text-xl font-bold text-tinta dark:text-[#EFE9DD] leading-snug line-clamp-2 group-hover:text-verde dark:group-hover:text-[#A9C4B5] transition-colors">
             {recipe.title}
           </h3>
 
           {/* Summary */}
           {recipe.summary && (
-            <p className="text-sm text-tinta-sec line-clamp-2 mt-2 leading-relaxed">
+            <p className="text-sm text-tinta-sec dark:text-[#B5AE9F] line-clamp-2 mt-2 leading-relaxed">
               {recipe.summary}
             </p>
           )}
         </div>
 
         {/* Metadata Footer */}
-        <div className="pt-4 mt-4 border-t border-marfim-border/70 flex items-center justify-between text-xs text-tinta-ter font-medium">
+        <div className="pt-4 mt-4 border-t border-marfim-border/70 dark:border-[#322F26] flex items-center justify-between text-xs text-tinta-ter dark:text-[#8F887B] font-medium">
           <div className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-bronze" />
             <span>{recipe.total_minutes ? `${recipe.total_minutes} min` : 'Tempo s/ inf.'}</span>

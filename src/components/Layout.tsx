@@ -27,12 +27,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
+import { useTheme } from '@/hooks/use-theme'
 
 const Layout: React.FC = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { theme, toggle: toggleTheme } = useTheme()
 
   const handleLogout = () => {
     logout()
@@ -132,6 +134,35 @@ const Layout: React.FC = () => {
               <span>+ Nova Receita</span>
             </Button>
           </div>
+
+          {/* Theme toggle */}
+          <div className="px-4 pt-3">
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white transition-all"
+              aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+            >
+              <span className="flex items-center gap-3">
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 text-bronze" />
+                ) : (
+                  <Moon className="w-4 h-4 text-white/50" />
+                )}
+                <span>{theme === 'dark' ? 'Tema claro' : 'Tema escuro'}</span>
+              </span>
+              <span
+                className={`relative w-9 h-5 rounded-full transition-colors ${
+                  theme === 'dark' ? 'bg-bronze' : 'bg-white/15'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                    theme === 'dark' ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* User Card at Footer */}
@@ -178,13 +209,13 @@ const Layout: React.FC = () => {
       </aside>
 
       {/* TOPBAR MOBILE (< 1024px) */}
-      <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-marfim-border/80 px-4 py-3 flex items-center justify-between shadow-xs">
+      <header className="lg:hidden sticky top-0 z-40 bg-white dark:bg-[#1E1C16] border-b border-marfim-border dark:border-[#322F26] px-4 py-3 flex items-center justify-between shadow-xs">
         <Link to="/" className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-verde flex items-center justify-center border border-bronze text-bronze">
             <UtensilsCrossed className="w-4 h-4 text-bronze" />
           </div>
           <div>
-            <span className="font-serif text-lg font-semibold text-tinta leading-none block">
+            <span className="font-serif text-lg font-semibold text-tinta dark:text-[#EFE9DD] leading-none block">
               Biblioteca Culinária
             </span>
             <span className="text-[9px] uppercase tracking-[0.12em] text-bronze block font-medium">
@@ -192,13 +223,22 @@ const Layout: React.FC = () => {
             </span>
           </div>
         </Link>
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className="p-2 rounded-lg text-tinta hover:bg-marfim-card transition-colors"
-          aria-label="Abrir menu"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg text-tinta dark:text-[#EFE9DD] hover:bg-marfim-card dark:hover:bg-[#221F18] transition-colors"
+            aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2 rounded-lg text-tinta dark:text-[#EFE9DD] hover:bg-marfim-card dark:hover:bg-[#221F18] transition-colors"
+            aria-label="Abrir menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
       </header>
 
       {/* MOBILE DRAWER OVERLAY */}
@@ -299,7 +339,7 @@ const Layout: React.FC = () => {
         </main>
 
         {/* FOOTER */}
-        <footer className="w-full border-t border-marfim-border py-6 text-center text-xs text-tinta-ter bg-marfim/60">
+        <footer className="w-full border-t border-marfim-border dark:border-[#322F26] py-6 text-center text-xs text-tinta-ter dark:text-[#8F887B] bg-marfim/60 dark:bg-[#15140F]/60">
           <p className="max-w-[1400px] mx-auto px-4">
             Biblioteca Culinária — acervo de receitas e fichas técnicas &copy;{' '}
             {new Date().getFullYear()}

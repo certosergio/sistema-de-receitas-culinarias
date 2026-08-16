@@ -97,6 +97,13 @@ routerAdd('GET', '/api/share/:token', (e) => {
         ingredients: r.get('ingredients') || [],
         method: r.get('method') || [],
         tips: r.get('tips') || '',
+        // Dietary restriction flags (migration 0006) — exposed so the public
+        // share page can render the same indicators as the rest of the app.
+        contains_gluten: r.get('contains_gluten') || false,
+        contains_dairy: r.get('contains_dairy') || false,
+        contains_eggs: r.get('contains_eggs') || false,
+        contains_fish: r.get('contains_fish') || false,
+        contains_honey: r.get('contains_honey') || false,
       })
     } catch (_) {}
   }

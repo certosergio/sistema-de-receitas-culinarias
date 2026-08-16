@@ -35,13 +35,54 @@
     --radius: 0.875rem;
   }
 
+  /* Dark theme — carvão escuro, verde profundo, marfim/claro, acento dourado/bronze. */
+  .dark {
+    --background: 40 18% 7%; /* #15140F carvão */
+    --foreground: 40 26% 88%; /* marfim claro */
+
+    --card: 40 14% 11%; /* #1E1C16 card carvão */
+    --card-foreground: 40 26% 88%;
+
+    --popover: 40 14% 11%;
+    --popover-foreground: 40 26% 88%;
+
+    --primary: 141 30% 19%; /* verde profundo mais escuro #24392C */
+    --primary-foreground: 40 33% 97%;
+
+    --secondary: 40 12% 14%; /* #221F18 */
+    --secondary-foreground: 40 26% 88%;
+
+    --muted: 40 12% 14%;
+    --muted-foreground: 40 10% 68%; /* #B5AE9F */
+
+    --accent: 34 50% 58%; /* bronze dourado mantido como acento */
+    --accent-foreground: 40 18% 7%;
+
+    --destructive: 11 55% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 14% 18%; /* #322F26 borda sutil */
+    --input: 40 14% 18%;
+    --ring: 34 50% 58%;
+  }
+
   * {
     @apply border-marfim-border;
+  }
+
+  /* Sidebar already dark on light theme — keep it dark in dark mode too. */
+  html.dark .bg-tinta,
+  html.dark .bg-tinta\/60 {
+    background-color: #0e0d0a;
   }
 
   body {
     @apply bg-marfim text-tinta font-sans antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  html.dark body {
+    @apply bg-[#15140F] text-[#EFE9DD];
   }
 
   /* Custom scrollbars */
@@ -59,6 +100,84 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #b98a4f;
   }
+  html.dark ::-webkit-scrollbar-thumb {
+    background: #3a352b;
+  }
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #b98a4f;
+  }
+}
+
+@layer utilities {
+  /* Dark-mode-aware label-caps + card-hover-lift overrides applied via the
+     .dark selector so the existing `label-caps` / `card-hover-lift` classes
+     pick up dark variants automatically wherever they are used. */
+  html.dark .label-caps {
+    color: #8f887b;
+  }
+  html.dark .card-hover-lift:hover {
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+    border-color: #b98a4f;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Global dark-theme overrides for the brand palette utilities.
+   Rather than appending `dark:` variants to hundreds of className strings, we
+   remap the semantic brand colors once here. Explicit `dark:` utilities on an
+   element still win (higher specificity), so targeted overrides keep working.
+   ------------------------------------------------------------------------- */
+html.dark .bg-white {
+  background-color: #1e1c16;
+}
+html.dark .bg-marfim {
+  background-color: #15140f;
+}
+html.dark .bg-marfim-card {
+  background-color: #221f18;
+}
+html.dark .bg-marfim\/30,
+html.dark .bg-marfim\/40,
+html.dark .bg-marfim\/50,
+html.dark .bg-marfim\/60 {
+  background-color: rgba(34, 31, 24, 0.6);
+}
+html.dark .bg-verde-subtle {
+  background-color: #1e3326;
+}
+html.dark .bg-bronze-subtle {
+  background-color: #3a2e1c;
+}
+
+html.dark .text-tinta {
+  color: #efe9dd;
+}
+html.dark .text-tinta-sec {
+  color: #b5ae9f;
+}
+html.dark .text-tinta-ter {
+  color: #8f887b;
+}
+html.dark .text-marfim {
+  color: #efe9dd;
+}
+html.dark .text-verde {
+  color: #a9c4b5;
+}
+html.dark .hover\:text-verde:hover {
+  color: #a9c4b5;
+}
+html.dark .group:hover .group-hover\:text-verde,
+html.dark .group:hover .group-hover\:text-verde\/80 {
+  color: #a9c4b5;
+}
+
+html.dark .border-marfim-border {
+  border-color: #322f26;
+}
+html.dark .border-marfim-border\/70,
+html.dark .border-marfim-border\/80 {
+  border-color: rgba(50, 47, 38, 0.7);
 }
 
 @layer utilities {

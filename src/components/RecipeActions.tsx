@@ -103,7 +103,7 @@ export const RecipeActions: React.FC<RecipeActionsProps> = ({
         className={`${btnSize} rounded-full flex items-center justify-center backdrop-blur-md border shadow-xs transition-all active:scale-90 ${
           favorited
             ? 'bg-bronze/95 border-bronze-light/50 text-white hover:bg-bronze-hover'
-            : 'bg-white/85 border-white/40 text-tinta hover:bg-white'
+            : 'bg-white/85 dark:bg-[#1E1C16]/85 border-white/40 dark:border-[#322F26] text-tinta dark:text-[#EFE9DD] hover:bg-white dark:hover:bg-[#221F18]'
         }`}
       >
         <Heart className={`${iconSize} ${favorited ? 'fill-current' : ''}`} strokeWidth={2} />
@@ -119,7 +119,7 @@ export const RecipeActions: React.FC<RecipeActionsProps> = ({
           <button
             type="button"
             aria-label="Adicionar à coleção"
-            className={`${btnSize} rounded-full flex items-center justify-center backdrop-blur-md bg-white/85 border border-white/40 text-tinta hover:bg-white shadow-xs transition-all active:scale-90`}
+            className={`${btnSize} rounded-full flex items-center justify-center backdrop-blur-md bg-white/85 dark:bg-[#1E1C16]/85 border border-white/40 dark:border-[#322F26] text-tinta dark:text-[#EFE9DD] hover:bg-white dark:hover:bg-[#221F18] shadow-xs transition-all active:scale-90`}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -130,7 +130,7 @@ export const RecipeActions: React.FC<RecipeActionsProps> = ({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-60 bg-white border-marfim-border rounded-xl shadow-dropdown p-1.5"
+          className="w-60 bg-white dark:bg-[#1E1C16] border-marfim-border dark:border-[#322F26] rounded-xl shadow-dropdown dark:shadow-dropdown-dark p-1.5"
           // Prevent the card Link navigation when interacting with the menu.
           onClick={(e) => e.stopPropagation()}
         >
@@ -138,11 +138,13 @@ export const RecipeActions: React.FC<RecipeActionsProps> = ({
             <FolderPlus className="w-3.5 h-3.5 text-bronze" />
             Adicionar à coleção
           </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-marfim-border" />
+          <DropdownMenuSeparator className="bg-marfim-border dark:bg-[#322F26]" />
           {loadingCols ? (
-            <div className="px-2 py-3 text-xs text-tinta-ter italic">Carregando coleções...</div>
+            <div className="px-2 py-3 text-xs text-tinta-ter dark:text-[#8F887B] italic">
+              Carregando coleções...
+            </div>
           ) : collections.length === 0 ? (
-            <div className="px-2 py-3 text-xs text-tinta-sec">
+            <div className="px-2 py-3 text-xs text-tinta-sec dark:text-[#B5AE9F]">
               Você ainda não criou coleções.{' '}
               <a
                 href="/colecoes"
@@ -168,7 +170,7 @@ export const RecipeActions: React.FC<RecipeActionsProps> = ({
                       className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
                         checked
                           ? 'bg-verde border-verde text-white'
-                          : 'border-marfim-border bg-white'
+                          : 'border-marfim-border dark:border-[#322F26] bg-white dark:bg-[#221F18]'
                       }`}
                     >
                       {checked && <Check className="w-3 h-3" />}

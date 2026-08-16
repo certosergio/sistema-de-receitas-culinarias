@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { fetchSharedCollection } from '@/services/collections'
 import { SharedCollection, SharedRecipe } from '@/types'
+import { RecipeCardDietary } from '@/components/RecipeCardDietary'
+import type { DietaryState } from '@/lib/dietary'
 import {
   Dialog,
   DialogContent,
@@ -93,9 +95,19 @@ const Compartilhar: React.FC = () => {
   const { collection, recipes } = data
 
   return (
-    <div className="min-h-screen bg-marfim flex flex-col text-tinta">
+    <div className="min-h-screen bg-marfim flex flex-col text-tinta dark:bg-[#15140F] dark:text-[#EFE9DD]">
+      {/* BANNER — "Coleção compartilhada da Biblioteca Culinária" */}
+      <div className="w-full bg-verde dark:bg-[#1E3326] border-b border-bronze/30">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-center gap-2 text-center">
+          <Share2 className="w-3.5 h-3.5 text-bronze-light" />
+          <span className="text-[11px] sm:text-xs font-medium tracking-wide text-marfim/90 dark:text-[#EFE9DD]/90">
+            Coleção compartilhada da Biblioteca Culinária
+          </span>
+        </div>
+      </div>
+
       {/* HEADER */}
-      <header className="bg-white border-b border-marfim-border shadow-sm">
+      <header className="bg-white dark:bg-[#1E1C16] border-b border-marfim-border dark:border-[#322F26] shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-verde flex items-center justify-center border border-bronze text-bronze shrink-0">
@@ -182,6 +194,14 @@ const Compartilhar: React.FC = () => {
                     <h3 className="font-serif text-xl font-bold text-tinta leading-snug line-clamp-2 group-hover:text-verde transition-colors">
                       {recipe.title}
                     </h3>
+                    {recipe.summary && (
+                      <p className="text-sm text-tinta-sec line-clamp-2 mt-2 leading-relaxed">
+                        {recipe.summary}
+                      </p>
+                    )}
+                    <div className="mt-2.5">
+                      <RecipeCardDietary state={recipe as DietaryState} />
+                    </div>
                   </div>
                   <div className="pt-4 mt-4 border-t border-marfim-border/70 flex items-center justify-between text-xs text-tinta-ter font-medium">
                     <span className="flex items-center gap-1.5">
@@ -203,7 +223,7 @@ const Compartilhar: React.FC = () => {
       </main>
 
       {/* FOOTER */}
-      <footer className="w-full border-t border-marfim-border py-6 text-center text-xs text-tinta-ter bg-white/60">
+      <footer className="w-full border-t border-marfim-border dark:border-[#322F26] py-6 text-center text-xs text-tinta-ter dark:text-[#8F887B] bg-white/60 dark:bg-[#1E1C16]/60">
         <p className="max-w-5xl mx-auto px-4 flex items-center justify-center gap-1.5">
           <Share2 className="w-3.5 h-3.5 text-bronze" />
           Compartilhado via Biblioteca Culinária

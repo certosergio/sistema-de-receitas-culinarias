@@ -118,6 +118,12 @@ export interface SharedRecipe {
   ingredients: { name: string; quantity: string; unit: string }[]
   method: string[]
   tips: string
+  /** Dietary restriction flags (mirrors Recipe, exposed on the public share). */
+  contains_gluten?: boolean
+  contains_dairy?: boolean
+  contains_eggs?: boolean
+  contains_fish?: boolean
+  contains_honey?: boolean
 }
 
 export interface SharedCollection {
