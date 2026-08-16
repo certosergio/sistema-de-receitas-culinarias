@@ -1,0 +1,320 @@
+{
+  "generatedAt": "2026-08-16T20:53:24.912Z",
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "apiRules": {
+        "list": "id = @request.auth.id",
+        "view": "id = @request.auth.id",
+        "create": "",
+        "update": "id = @request.auth.id",
+        "delete": "id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "avatar",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "categories",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_categories_slug ON categories (slug)"]
+    },
+    {
+      "name": "techniques",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_techniques_slug ON techniques (slug)"]
+    },
+    {
+      "name": "recipes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "summary",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "categories"
+        },
+        {
+          "name": "technique",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "techniques"
+        },
+        {
+          "name": "cover",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "difficulty",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["Fácil", "Médio", "Difícil"]
+        },
+        {
+          "name": "yield_quantity",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "yield_unit",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["porções", "unidades", "fatias", "xícaras", "kg", "g", "L", "ml"]
+        },
+        {
+          "name": "portions",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prep_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cook_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "total_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cost",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "calories",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "protein",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "carbs",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "fat",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ingredients",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "method",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tips",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "author",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_recipes_slug ON recipes (slug)",
+        "CREATE INDEX idx_recipes_category ON recipes (category)",
+        "CREATE INDEX idx_recipes_technique ON recipes (technique)",
+        "CREATE INDEX idx_recipes_author ON recipes (author)",
+        "CREATE INDEX idx_recipes_title ON recipes (title)",
+        "CREATE INDEX idx_recipes_difficulty ON recipes (difficulty)",
+        "CREATE INDEX idx_recipes_total_minutes ON recipes (total_minutes)",
+        "CREATE INDEX idx_recipes_created ON recipes (created DESC)"
+      ]
+    }
+  ]
+}

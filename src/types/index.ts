@@ -1,0 +1,90 @@
+export interface User {
+  id: string
+  email: string
+  name?: string
+  avatar?: string
+  created: string
+  updated: string
+}
+
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  color?: string
+  created: string
+  updated: string
+}
+
+export interface Technique {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  created: string
+  updated: string
+}
+
+export interface IngredientItem {
+  name: string
+  quantity: string
+  unit: string
+}
+
+export interface Recipe {
+  id: string
+  title: string
+  slug: string
+  summary?: string
+  category?: string
+  expand?: {
+    category?: Category
+    technique?: Technique
+    author?: User
+  }
+  technique?: string
+  cover?: string
+  difficulty?: 'Fácil' | 'Médio' | 'Difícil'
+  yield_quantity?: number
+  yield_unit?: 'porções' | 'unidades' | 'fatias' | 'xícaras' | 'kg' | 'g' | 'L' | 'ml'
+  portions?: string
+  prep_minutes?: number
+  cook_minutes?: number
+  total_minutes?: number
+  cost?: number
+  calories?: number
+  protein?: number
+  carbs?: number
+  fat?: number
+  ingredients?: IngredientItem[]
+  method?: string[]
+  tips?: string
+  author?: string
+  created: string
+  updated: string
+}
+
+export interface RecipeFormData {
+  title: string
+  slug?: string
+  summary: string
+  category: string
+  technique: string
+  difficulty: 'Fácil' | 'Médio' | 'Difícil'
+  yield_quantity: number | string
+  yield_unit: 'porções' | 'unidades' | 'fatias' | 'xícaras' | 'kg' | 'g' | 'L' | 'ml'
+  portions: string
+  prep_minutes: number | string
+  cook_minutes: number | string
+  cost: number | string
+  calories: number | string
+  protein: number | string
+  carbs: number | string
+  fat: number | string
+  ingredients: IngredientItem[]
+  method: string[]
+  tips: string
+  coverFile?: File | null
+  removeCover?: boolean
+}
