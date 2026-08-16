@@ -13,6 +13,7 @@ import {
   Link2,
   Link2Off,
   CheckCircle2,
+  Tag,
 } from 'lucide-react'
 import {
   getCollectionById,
@@ -55,6 +56,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useRealtime } from '@/hooks/use-realtime'
 import { toast } from '@/hooks/use-toast'
+import { EtiquetasDialog } from '@/components/EtiquetasDialog'
 
 const ColecaoDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -79,6 +81,9 @@ const ColecaoDetail: React.FC = () => {
   const [shareOpen, setShareOpen] = useState(false)
   const [shareBusy, setShareBusy] = useState(false)
   const [copied, setCopied] = useState(false)
+
+  // Etiquetas dialog
+  const [etiquetasOpen, setEtiquetasOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -257,6 +262,16 @@ const ColecaoDetail: React.FC = () => {
 
           <Button
             variant="outline"
+            onClick={() => setEtiquetasOpen(true)}
+            disabled={recipes.length === 0}
+            className="hidden sm:inline-flex border-marfim-border bg-white text-tinta rounded-xl gap-2 h-10 text-xs font-semibold shadow-xs disabled:opacity-50"
+          >
+            <Tag className="w-3.5 h-3.5 text-bronze" />
+            <span>Etiquetas</span>
+          </Button>
+
+          <Button
+            variant="outline"
             onClick={openEdit}
             className="hidden sm:inline-flex border-marfim-border bg-white text-tinta rounded-xl gap-2 h-10 text-xs font-semibold shadow-xs"
           >
@@ -291,6 +306,14 @@ const ColecaoDetail: React.FC = () => {
               >
                 <Edit className="w-3.5 h-3.5 text-bronze" />
                 <span>Editar coleção</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setEtiquetasOpen(true)}
+                disabled={recipes.length === 0}
+                className="cursor-pointer text-xs rounded-lg py-2 flex items-center gap-2 disabled:opacity-50"
+              >
+                <Tag className="w-3.5 h-3.5 text-bronze" />
+                <span>Etiquetas</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -521,6 +544,13 @@ const ColecaoDetail: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ETIQUETAS DIALOG */}
+      <EtiquetasDialog
+        open={etiquetasOpen}
+        onOpenChange={setEtiquetasOpen}
+        collection={collection}
+      />
     </div>
   )
 }
