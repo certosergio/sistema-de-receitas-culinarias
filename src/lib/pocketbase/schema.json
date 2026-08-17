@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-17T00:36:11.677Z",
+  "generatedAt": "2026-08-17T00:41:25.472Z",
   "collections": [
     {
       "name": "users",
@@ -604,6 +604,63 @@
         "CREATE UNIQUE INDEX idx_day_notes_user_date ON day_notes (user, date)",
         "CREATE INDEX idx_day_notes_user ON day_notes (user)",
         "CREATE INDEX idx_day_notes_date ON day_notes (date)"
+      ]
+    },
+    {
+      "name": "planning_history",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "week_start",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "week_end",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "plan_data",
+          "type": "json",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_planning_history_user_week ON planning_history (user, week_start)",
+        "CREATE INDEX idx_planning_history_user ON planning_history (user)",
+        "CREATE INDEX idx_planning_history_week_start ON planning_history (week_start)"
       ]
     }
   ]

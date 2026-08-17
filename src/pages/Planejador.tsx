@@ -13,6 +13,8 @@ import {
   ShoppingBasket,
   Leaf,
   Utensils,
+  Archive,
+  History,
 } from 'lucide-react'
 import {
   getMealPlans,
@@ -30,10 +32,13 @@ import {
   type DayNote,
 } from '@/services/mealPlans'
 import { exportWeekPlanPdf } from '@/lib/weekPlanPdf'
+import { buildShoppingList, type ShoppingList } from '@/lib/shoppingList'
 import { Textarea } from '@/components/ui/textarea'
 import { FileDown } from 'lucide-react'
 import debounce from '@/lib/debounce'
 import { getRecipes, getRecipeCoverUrl } from '@/services/recipes'
+import { savePlanningHistory, type HistoryPlanData } from '@/services/planningHistory'
+import PlanningHistoryDialog from '@/components/PlanningHistory'
 import { getCategories } from '@/services/categories'
 import { isVegan } from '@/lib/dietary'
 import pb from '@/lib/pocketbase/client'
@@ -156,342 +161,8 @@ interface SlotTarget {
   meal: MealType
 }
 
-// ----------------------------------------------------------------------------
-// Shopping-list helpers
-// ----------------------------------------------------------------------------
-
-/** Simple keyword-based grocery category guesser (Portuguese). */
-const GROCERY_KEYWORDS: { category: string; words: string[] }[] = [
-  {
-    category: 'Hortifrúti',
-    words: [
-      'tomate',
-      'cebola',
-      'alho',
-      'batata',
-      'cenoura',
-      'abobora',
-      'abóbora',
-      'pimentão',
-      'pimentao',
-      'alface',
-      'rúcula',
-      'rucula',
-      'espinafre',
-      'brócolis',
-      'brocolis',
-      'couve',
-      'abobrinha',
-      'berinjela',
-      'pepino',
-      'beterraba',
-      'mandioca',
-      'inhame',
-      'cará',
-      'cara',
-      'chuchu',
-      'quiabo',
-      'jiló',
-      'jilo',
-      'limão',
-      'limao',
-      'laranja',
-      'maçã',
-      'maca',
-      'banana',
-      'mamão',
-      'mamao',
-      'abacaxi',
-      'manga',
-      'uva',
-      'morango',
-      'abacate',
-      'pera',
-      'pêra',
-      'mamão',
-      'mamão',
-      'kiwi',
-      'melancia',
-      'melão',
-      'melao',
-      'ervilha',
-      'feijão',
-      'feijao',
-      'grão',
-      'grao',
-      'lentilha',
-      'grão-de-bico',
-      'cogumelo',
-      'champignon',
-      'salsa',
-      'coentro',
-      'manjericão',
-      'manjericao',
-      'cebolinha',
-      'hortelã',
-      'hortela',
-      'alecrim',
-      'tomilho',
-      'louro',
-      'orégano',
-      'oregano',
-      'pimenta',
-      'rucola',
-    ],
-  },
-  {
-    category: 'Laticínios',
-    words: [
-      'leite',
-      'queijo',
-      'manteiga',
-      'requeijão',
-      'requeijao',
-      'iogurte',
-      'creme de leite',
-      'nata',
-      'ricota',
-      'mascarpone',
-      'parmesão',
-      'parmesao',
-      'muçarela',
-      'mussarela',
-      'catupiry',
-      'gorgonzola',
-      'cream cheese',
-    ],
-  },
-  {
-    category: 'Carnes',
-    words: [
-      'frango',
-      'carne',
-      'boi',
-      'porco',
-      'bacon',
-      'linguiça',
-      'linguica',
-      'presunto',
-      'salsicha',
-      'linguiça',
-      'costela',
-      'maminha',
-      'alcatra',
-      'picanha',
-      'filé',
-      'file',
-      'coxinha',
-      'sobrecoxa',
-      'peito',
-      'lombo',
-      'pernil',
-      'panceta',
-      'pastrami',
-      'defumado',
-      'salame',
-      'pepperoni',
-      'calabresa',
-      'fradinho',
-      'carne moída',
-      'carne moida',
-      'patinho',
-      'acém',
-      'acem',
-      'moela',
-      'fígado',
-      'figado',
-      'salmão',
-      'salmao',
-      'atum',
-      'bacalhau',
-      'camarão',
-      'camarao',
-      'polvo',
-      'lula',
-      'merluza',
-      'tilápia',
-      'tilapia',
-      'sardinha',
-      'anchova',
-      'truta',
-      'crustáceo',
-      'crustaceo',
-      'marisco',
-      'ostra',
-      'vôngole',
-      'vongole',
-      'caranguejo',
-    ],
-  },
-  {
-    category: 'Despensa',
-    words: [
-      'farinha',
-      'arroz',
-      'macarrão',
-      'macarrao',
-      'massa',
-      'espaguete',
-      'penne',
-      'fusilli',
-      'talharim',
-      'lasanha',
-      'nhoque',
-      'pão',
-      'pao',
-      'pão',
-      'açúcar',
-      'acucar',
-      'sal',
-      'óleo',
-      'oleo',
-      'azeite',
-      'fermento',
-      'baunilha',
-      'canela',
-      'cravo',
-      'noz-moscada',
-      'cominho',
-      'açafrão',
-      'acafrao',
-      'cúrcuma',
-      'curcuma',
-      'páprica',
-      'paprica',
-      'ervas',
-      'chocolate',
-      'cacau',
-      'cacao',
-      'fermento',
-      'mel',
-      'geleia',
-      'fubá',
-      'fuba',
-      'polenta',
-      'aveia',
-      'granola',
-      'quinoa',
-      'trigo',
-      'centeio',
-      'fermento',
-      'amendoim',
-      'castanha',
-      'nozes',
-      'amêndoa',
-      'amendoa',
-      'uva passa',
-      'tâmaras',
-      'tamaras',
-      'cranberry',
-      'coco',
-      'leite de coco',
-      'shoyu',
-      'molho de soja',
-      'molho inglês',
-      'molho ingles',
-      'mostarda',
-      'ketchup',
-      'maionese',
-      'extrato de tomate',
-      'molho de tomate',
-      'passata',
-      'tomate pelado',
-      'vinagre',
-      'xerez',
-      'balsâmico',
-      'balsamico',
-      'saquê',
-      'sake',
-      'mirin',
-      'cogumelo seco',
-      'fungo',
-      'shiitake',
-      'shimeji',
-      'ervas finas',
-    ],
-  },
-]
-
-function guessGroceryCategory(name: string): string {
-  const lower = name.toLowerCase()
-  for (const group of GROCERY_KEYWORDS) {
-    if (group.words.some((w) => lower.includes(w))) {
-      return group.category
-    }
-  }
-  return 'Outros'
-}
-
-interface AggregatedIngredient {
-  name: string
-  quantities: string[]
-  unit: string
-  count: number
-}
-
-interface ShoppingList {
-  groups: { category: string; items: AggregatedIngredient[] }[]
-  totalItems: number
-  totalRecipes: number
-}
-
-/** Aggregates ingredients across the week's recipes, grouping by name and
- *  grocery category. Quantities are summed textually (same unit merged). */
-function buildShoppingList(recipes: Recipe[]): ShoppingList {
-  const map = new Map<string, AggregatedIngredient>()
-  const usedRecipeIds = new Set<string>()
-
-  for (const recipe of recipes) {
-    if (!recipe.ingredients || recipe.ingredients.length === 0) continue
-    usedRecipeIds.add(recipe.id)
-    for (const ing of recipe.ingredients) {
-      const rawName = (ing.name || '').trim()
-      if (!rawName) continue
-      // Normalize name: lowercase, collapse spaces.
-      const key = rawName.toLowerCase().replace(/\s+/g, ' ').trim()
-      const unit = (ing.unit || '').trim()
-      const quantity = (ing.quantity || '').trim()
-      const existing = map.get(key)
-      if (existing) {
-        existing.count += 1
-        if (quantity) existing.quantities.push(quantity)
-        if (unit && !existing.unit) existing.unit = unit
-      } else {
-        map.set(key, {
-          name: rawName,
-          quantities: quantity ? [quantity] : [],
-          unit,
-          count: 1,
-        })
-      }
-    }
-  }
-
-  // Group by grocery category.
-  const groupsMap = new Map<string, AggregatedIngredient[]>()
-  for (const item of map.values()) {
-    const cat = guessGroceryCategory(item.name)
-    if (!groupsMap.has(cat)) groupsMap.set(cat, [])
-    groupsMap.get(cat)!.push(item)
-  }
-
-  // Sort items within each group alphabetically, groups in a fixed order.
-  const categoryOrder = ['Hortifrúti', 'Laticínios', 'Carnes', 'Despensa', 'Outros']
-  const groups = categoryOrder
-    .filter((c) => groupsMap.has(c))
-    .map((category) => ({
-      category,
-      items: groupsMap.get(category)!.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
-    }))
-
-  return {
-    groups,
-    totalItems: map.size,
-    totalRecipes: usedRecipeIds.size,
-  }
-}
-
-// ----------------------------------------------------------------------------
+// (Shopping-list aggregation now lives in src/lib/shoppingList.ts and is
+//  imported as `buildShoppingList` + the `ShoppingList` type.)
 
 const Planejador: React.FC = () => {
   const navigate = useNavigate()
@@ -537,6 +208,14 @@ const Planejador: React.FC = () => {
   const [exportingPdf, setExportingPdf] = useState(false)
   // References to per-day debounced save functions, keyed by iso date.
   const noteSaversRef = useRef<Record<string, (text: string) => void>>({})
+
+  // Planning history (archived weeks) dialog + archiving state
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  // Whether the currently-viewed week is strictly in the past.
+  const isPastWeek = useMemo(() => {
+    return startOfWeek(weekStart).getTime() < startOfWeek(today).getTime()
+  }, [weekStart, today])
 
   const weekStartIso = toISODate(weekStart)
   const weekEndIso = toISODate(addDays(weekStart, 6))
@@ -906,6 +585,154 @@ const Planejador: React.FC = () => {
     return recipeIds.map((id) => expandedById.get(id)).filter((r): r is Recipe => Boolean(r))
   }, [plans])
 
+  // --- Archive the current week into planning_history ---
+
+  const archiveCurrentWeek = useCallback(
+    async (silent = false): Promise<void> => {
+      // Snapshot is only meaningful when there are meals planned.
+      if (plans.length === 0) return
+      setArchiving(true)
+      try {
+        const recipes = await getExpandedRecipes()
+        const recipeById = new Map<string, Recipe>()
+        for (const r of recipes) recipeById.set(r.id, r)
+
+        const planData: HistoryPlanData = {
+          week_start: weekStartIso,
+          week_end: weekEndIso,
+          plans: plans.map((p) => ({
+            date: p.date,
+            meal_type: p.meal_type,
+            recipe: recipeById.get(p.recipe) || null,
+          })),
+          notes: { ...notes },
+        }
+        await savePlanningHistory(weekStartIso, weekEndIso, planData)
+        if (!silent) {
+          toast({
+            title: 'Semana arquivada',
+            description: 'O planejamento foi salvo no histórico.',
+          })
+        }
+      } catch (err) {
+        console.error('Erro ao arquivar semana:', err)
+        if (!silent) {
+          toast({
+            title: 'Falha ao arquivar',
+            description: 'Não foi possível salvar a semana no histórico.',
+            variant: 'destructive',
+          })
+        }
+      } finally {
+        setArchiving(false)
+      }
+    },
+    [plans, weekStartIso, weekEndIso, notes, getExpandedRecipes],
+  )
+
+  // Auto-archive past weeks when navigating away from them (week changes or
+  // unmount). The effect tracks the *previous* week; when it changes and the
+  // previous one is in the past with meals, it snapshots that previous week.
+  const prevWeekStartRef = useRef<Date>(weekStart)
+  const prevPlansRef = useRef<MealPlan[]>(plans)
+  const prevNotesRef = useRef<Record<string, string>>(notes)
+
+  useEffect(() => {
+    prevPlansRef.current = plans
+    prevNotesRef.current = notes
+  }, [plans, notes])
+
+  useEffect(() => {
+    const prevWeek = prevWeekStartRef.current
+    prevWeekStartRef.current = weekStart
+    if (prevWeek.getTime() === weekStart.getTime()) return
+    // If the week we just left is in the past and had meals, archive it.
+    if (startOfWeek(prevWeek).getTime() < startOfWeek(today).getTime()) {
+      const prevStartIso = toISODate(prevWeek)
+      const prevEndIso = toISODate(addDays(prevWeek, 6))
+      const prevPlans = prevPlansRef.current
+      const prevNotes = prevNotesRef.current
+      if (prevPlans.length === 0) return
+      // Run async without blocking the render; read fresh recipe data.
+      ;(async () => {
+        try {
+          const recipeIds = Array.from(new Set(prevPlans.map((p) => p.recipe).filter(Boolean)))
+          const expandedById = new Map<string, Recipe>()
+          for (const p of prevPlans) {
+            if (p.expand?.recipe) expandedById.set(p.expand.recipe.id, p.expand.recipe)
+          }
+          const toFetch = recipeIds.filter((id) => !expandedById.has(id))
+          if (toFetch.length > 0) {
+            const fetched = await Promise.all(
+              toFetch.map((id) =>
+                pb.collection('recipes').getOne<Recipe>(id, { requestKey: null }),
+              ),
+            )
+            for (const r of fetched) expandedById.set(r.id, r)
+          }
+          const planData: HistoryPlanData = {
+            week_start: prevStartIso,
+            week_end: prevEndIso,
+            plans: prevPlans.map((p) => ({
+              date: p.date,
+              meal_type: p.meal_type,
+              recipe: expandedById.get(p.recipe) || null,
+            })),
+            notes: { ...prevNotes },
+          }
+          await savePlanningHistory(prevStartIso, prevEndIso, planData)
+        } catch (err) {
+          console.error('Erro ao arquivar semana automaticamente:', err)
+        }
+      })()
+    }
+  }, [weekStart, today])
+
+  // Also archive the current past week on unmount (leaving the planner page).
+  useEffect(() => {
+    return () => {
+      const w = prevWeekStartRef.current
+      const currentPlans = prevPlansRef.current
+      const currentNotes = prevNotesRef.current
+      if (startOfWeek(w).getTime() < startOfWeek(today).getTime() && currentPlans.length > 0) {
+        const startIso = toISODate(w)
+        const endIso = toISODate(addDays(w, 6))
+        ;(async () => {
+          try {
+            const recipeIds = Array.from(new Set(currentPlans.map((p) => p.recipe).filter(Boolean)))
+            const expandedById = new Map<string, Recipe>()
+            for (const p of currentPlans) {
+              if (p.expand?.recipe) expandedById.set(p.expand.recipe.id, p.expand.recipe)
+            }
+            const toFetch = recipeIds.filter((id) => !expandedById.has(id))
+            if (toFetch.length > 0) {
+              const fetched = await Promise.all(
+                toFetch.map((id) =>
+                  pb.collection('recipes').getOne<Recipe>(id, { requestKey: null }),
+                ),
+              )
+              for (const r of fetched) expandedById.set(r.id, r)
+            }
+            const planData: HistoryPlanData = {
+              week_start: startIso,
+              week_end: endIso,
+              plans: currentPlans.map((p) => ({
+                date: p.date,
+                meal_type: p.meal_type,
+                recipe: expandedById.get(p.recipe) || null,
+              })),
+              notes: { ...currentNotes },
+            }
+            await savePlanningHistory(startIso, endIso, planData)
+          } catch (err) {
+            console.error('Erro ao arquivar ao sair da página:', err)
+          }
+        })()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today])
+
   const handleExportPdf = useCallback(async () => {
     setExportingPdf(true)
     try {
@@ -985,6 +812,28 @@ const Planejador: React.FC = () => {
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setHistoryOpen(true)}
+            className="border-marfim-border bg-white text-tinta rounded-xl h-10 px-3 text-xs font-semibold gap-1.5"
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Histórico</span>
+          </Button>
+          {isPastWeek && (
+            <Button
+              onClick={() => archiveCurrentWeek()}
+              disabled={busy || archiving || !hasMeals}
+              className="bg-tinta hover:bg-tinta/90 text-white rounded-xl h-10 px-3 text-xs font-semibold gap-1.5"
+            >
+              {archiving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Archive className="w-3.5 h-3.5" />
+              )}
+              <span>Arquivar</span>
+            </Button>
+          )}
           <Button
             onClick={handleGenerateShoppingList}
             disabled={busy || !hasMeals}
@@ -1424,6 +1273,9 @@ const Planejador: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PLANNING HISTORY DIALOG */}
+      <PlanningHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
   )
 }
