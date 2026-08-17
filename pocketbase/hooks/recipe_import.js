@@ -11,7 +11,7 @@ routerAdd(
   'POST',
   '/api/import-recipe',
   (e) => {
-    const body = e.requestInfo().body || {}
+    const body = $apis.requestInfo(e).data || {}
     const rawUrl = typeof body.url === 'string' ? body.url.trim() : ''
     if (!rawUrl) {
       return e.json(400, { error: 'Informe a URL da receita.' })
