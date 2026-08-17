@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import QRCode from 'qrcode'
 import { Printer, Loader2, Tag, Leaf, Wheat, MilkOff, Egg, Fish, Droplet, X } from 'lucide-react'
 import { Collection, Recipe } from '@/types'
 import {
@@ -12,6 +13,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { getCollectionRecipes } from '@/services/collections'
 import { isVegan, type DietaryState, type DietaryFlagKey } from '@/lib/dietary'
+import { RecipeQrCode } from '@/components/RecipeQrCode'
+
+/** Production base URL for the ficha técnica of a recipe. */
+const PRODUCTION_BASE_URL = 'https://sistema-de-receitas-culinarias-ea104.goskip.app'
+
+/** Builds the public ficha técnica URL for a given recipe id. */
+const recipeUrl = (recipeId: string) => `${PRODUCTION_BASE_URL}/receitas/${recipeId}`
 
 interface EtiquetasDialogProps {
   open: boolean
@@ -116,6 +124,16 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             </div>
           )}
         </footer>
+
+        {/* QR code — ficha técnica online (discreet, bottom-right) */}
+        <div className="mt-3 flex justify-end">
+          <div className="flex flex-col items-center gap-0.5">
+            <RecipeQrCode url={recipeUrl(recipe.id)} size={64} />
+            <span className="text-[8px] text-tinta-ter dark:text-[#8F887B] leading-none">
+              Ficha técnica online
+            </span>
+          </div>
+        </div>
       </div>
     </article>
   )
