@@ -574,6 +574,13 @@ html.dark ::selection {
    changes — only when window.print() fires. The app chrome (sidebar,
    topbar, buttons, interactive elements) is hidden and the print-only
    #print-root is revealed. */
+
+/* Keep the print-root container invisible on screen (normal/screen CSS,
+   OUTSIDE @media print). It is only revealed inside @media print below. */
+#print-root {
+  display: none;
+}
+
 @media print {
   @page {
     size: A4;
@@ -586,36 +593,18 @@ html.dark ::selection {
     color: #1c1b17 !important;
   }
 
-  /* Hide the application shell entirely. */
-  body > #root > * {
-    visibility: hidden;
-  }
-
-  /* Radix portals (Dialog, Popover, …) render directly on document.body,
-     parallel to #root, so they are not covered by the rule above. Hide them
-     during print so only #print-root (e.g. the EtiquetasPrintSheet grid) is
-     visible — preventing the on-screen dialog header, toolbar, buttons and
-     preview grid from leaking onto the printed pages. */
-  [data-radix-portal] {
+  /* Show only the print root: hide every direct child of <body> except
+     #print-root. This covers #root (the whole application shell) AND any
+     Radix UI portals (Dialog, Popover, …) which render directly on
+     document.body without a [data-radix-portal] wrapper attribute, so the
+     old [data-radix-portal] selector never matched them. */
+  body > :not(#print-root) {
     display: none !important;
   }
 
-  /* Keep the print-root container invisible on screen. */
+  /* Reveal the print root (and its descendants). */
   #print-root {
-    display: none;
-  }
-  @media print {
-    #print-root {
-      display: block;
-    }
-  }
-
-  /* Reveal only the print root (and its descendants). */
-  #print-root,
-  #print-root * {
-    visibility: visible;
-  }
-  #print-root {
+    display: block !important;
     position: absolute;
     inset: 0;
     margin: 0;
@@ -623,6 +612,10 @@ html.dark ::selection {
     width: 100%;
     background: #ffffff !important;
     color: #1c1b17 !important;
+  }
+  #print-root,
+  #print-root * {
+    visibility: visible;
   }
 
   /* Force print-friendly palette everywhere inside the print root. */
