@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import {
-  importFromUrl,
   importFromText,
   parseRecipeText,
   parseIngredientLine,
@@ -19,20 +18,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import {
-  Link2,
-  FileText,
-  Loader2,
-  Wand2,
-  AlertCircle,
-  CheckCircle2,
-  ExternalLink,
-  ClipboardPaste,
-} from 'lucide-react'
+import { FileText, Loader2, Wand2, AlertCircle, CheckCircle2, ClipboardPaste } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
-
-type Mode = 'url' | 'text'
 
 interface ImportRecipeDialogProps {
   open: boolean
@@ -42,20 +30,18 @@ interface ImportRecipeDialogProps {
 }
 
 /**
- * Modal that imports a recipe from a URL (via the backend proxy) or from
- * pasted raw text, shows a compact preview of what was extracted, and on
- * confirm hands the parsed recipe back so the parent form can be prefilled.
+ * Modal that imports a recipe from pasted raw text, shows a compact preview
+ * of what was extracted, and on confirm hands the parsed recipe back so the
+ * parent form can be prefilled.
  *
  * The heavy extraction logic lives in `@/lib/recipeImport`; this component
- * only orchestrates the UI and lets the user switch URL/text fallback.
+ * only orchestrates the UI.
  */
 const ImportRecipeDialog: React.FC<ImportRecipeDialogProps> = ({
   open,
   onOpenChange,
   onConfirm,
 }) => {
-  const [mode, setMode] = useState<Mode>('url')
-  const [urlInput, setUrlInput] = useState('')
   const [textInput, setTextInput] = useState('')
   const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
@@ -66,46 +52,12 @@ const ImportRecipeDialog: React.FC<ImportRecipeDialogProps> = ({
     setParsed(null)
     setParseError(null)
     setSourceLabel('')
-    setUrlInput('')
     setTextInput('')
   }
 
   const handleClose = (next: boolean) => {
     if (!next) reset()
     onOpenChange(next)
-  }
-
-  const handleParseUrl = async () => {
-    setParseError(null)
-    const url = urlInput.trim()
-    if (!url) {
-      setParseError('Cole a URL da receita para continuar.')
-      return
-    }
-    if (!/^https?:\/\//i.test(url)) {
-      setParseError('A URL deve começar com http:// ou https://')
-      return
-    }
-    setParsing(true)
-    try {
-      const result = await importFromUrl(url)
-      setParsed(result)
-      setSourceLabel(url)
-      toast({
-        title: 'Receita importada',
-        description: `${result.ingredients.length} ingrediente(s) e ${result.method.length} passo(s) extraídos.`,
-      })
-    } catch (err: unknown) {
-      console.error('Erro ao importar URL:', err)
-      const errorObj = err as { message?: string; data?: { message?: string } }
-      const msg =
-        errorObj?.data?.message ||
-        errorObj?.message ||
-        'Não foi possível importar a receita da URL. Tente colar o texto manualmente.'
-      setParseError(msg)
-    } finally {
-      setParsing(false)
-    }
   }
 
   const handleParseText = () => {
@@ -186,125 +138,52 @@ const ImportRecipeDialog: React.FC<ImportRecipeDialogProps> = ({
             Importar Receita
           </DialogTitle>
           <DialogDescription className="text-tinta-sec text-sm">
-            Cole uma URL ou o texto de uma receita. O sistema extrai a ficha técnica e você revisa
-            antes de preencher o formulário.
+            Cole o texto de uma receita. O sistema extrai a ficha técnica e você revisa antes de
+            preencher o formulário.
           </DialogDescription>
         </DialogHeader>
 
         <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
           {!hasParsed && (
             <div className="space-y-5">
-              {/* Mode tabs */}
-              <div className="inline-flex p-1 bg-marfim-card rounded-xl border border-marfim-border">
-                <button
-                  onClick={() => setMode('url')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                    mode === 'url'
-                      ? 'bg-white text-verde shadow-xs'
-                      : 'text-tinta-sec hover:text-tinta'
-                  }`}
-                >
-                  <Link2 className="w-3.5 h-3.5" />
-                  URL do site
-                </button>
-                <button
-                  onClick={() => setMode('text')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                    mode === 'text'
-                      ? 'bg-white text-verde shadow-xs'
-                      : 'text-tinta-sec hover:text-tinta'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  Texto da receita
-                </button>
+              <div className="space-y-3">
+                <Label htmlFor="import-text" className="label-caps">
+                  Cole aqui o texto completo da receita
+                </Label>
+                <Textarea
+                  id="import-text"
+                  rows={8}
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder={`Bolo de Cenoura\n\nIngredientes:\n3 cenouras médias\n2 xícaras de açúcar\n...\n\nModo de preparo:\n1. Bata as cenouras no liquidificador...`}
+                  className="bg-marfim/30 focus:bg-white rounded-xl focus-visible:ring-verde text-xs leading-relaxed font-mono"
+                />
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleParseText}
+                    disabled={parsing}
+                    className="h-10 bg-verde hover:bg-verde-hover text-white rounded-xl px-5"
+                  >
+                    {parsing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Analisando
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Estruturar
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-
-              {mode === 'url' ? (
-                <div className="space-y-3">
-                  <Label htmlFor="import-url" className="label-caps">
-                    Endereço (URL) da receita
-                  </Label>
-                  <div className="flex flex-col sm:flex-row gap-2.5">
-                    <div className="relative flex-1">
-                      <Link2 className="w-4 h-4 text-tinta-ter absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <Input
-                        id="import-url"
-                        type="url"
-                        value={urlInput}
-                        onChange={(e) => setUrlInput(e.target.value)}
-                        placeholder="https://www.tudogostoso.com.br/receita/..."
-                        className="h-11 pl-10 bg-marfim/30 focus:bg-white rounded-xl focus-visible:ring-verde"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleParseUrl()
-                        }}
-                      />
-                    </div>
-                    <Button
-                      onClick={handleParseUrl}
-                      disabled={parsing}
-                      className="h-11 bg-verde hover:bg-verde-hover text-white rounded-xl px-5"
-                    >
-                      {parsing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Importando
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="w-4 h-4 mr-2" />
-                          Importar
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-tinta-ter leading-relaxed">
-                    Funciona com a maioria dos sites de receitas. Se a extração falhar, troque para
-                    a aba “Texto da receita”.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Label htmlFor="import-text" className="label-caps">
-                    Cole aqui o texto completo da receita
-                  </Label>
-                  <Textarea
-                    id="import-text"
-                    rows={8}
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder={`Bolo de Cenoura\n\nIngredientes:\n3 cenouras médias\n2 xícaras de açúcar\n...\n\nModo de preparo:\n1. Bata as cenouras no liquidificador...`}
-                    className="bg-marfim/30 focus:bg-white rounded-xl focus-visible:ring-verde text-xs leading-relaxed font-mono"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      onClick={handleParseText}
-                      disabled={parsing}
-                      className="h-10 bg-verde hover:bg-verde-hover text-white rounded-xl px-5"
-                    >
-                      {parsing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Analisando
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="w-4 h-4 mr-2" />
-                          Estruturar
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
 
               {parsing && (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-7 h-7 animate-spin text-verde mr-2" />
                   <span className="text-sm font-serif italic text-tinta-sec">
-                    {mode === 'url'
-                      ? 'Buscando e analisando a página...'
-                      : 'Estruturando a receita...'}
+                    Estruturando a receita...
                   </span>
                 </div>
               )}
@@ -330,32 +209,18 @@ const ImportRecipeDialog: React.FC<ImportRecipeDialogProps> = ({
                   <p className="text-xs font-semibold text-verde">
                     Receita estruturada com sucesso
                   </p>
-                  <p className="text-[11px] text-verde/80 truncate flex items-center gap-1 mt-0.5">
-                    <span>Fonte: {sourceLabel}</span>
-                    {parsed.sourceUrl && (
-                      <a
-                        href={parsed.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-0.5 hover:underline"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </p>
+                  <p className="text-[11px] text-verde/80 truncate mt-0.5">Fonte: {sourceLabel}</p>
                 </div>
-                {mode === 'text' && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleReanalyze}
-                    className="text-verde hover:bg-verde/10 text-xs h-7"
-                  >
-                    <Wand2 className="w-3 h-3 mr-1" />
-                    Reanalisar
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReanalyze}
+                  className="text-verde hover:bg-verde/10 text-xs h-7"
+                >
+                  <Wand2 className="w-3 h-3 mr-1" />
+                  Reanalisar
+                </Button>
               </div>
 
               {/* Title + summary editable */}

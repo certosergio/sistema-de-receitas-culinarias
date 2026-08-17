@@ -5,7 +5,6 @@ import { getCategories } from '@/services/categories'
 import { getTechniques } from '@/services/techniques'
 import { Category, Technique, IngredientItem, RecipeFormData } from '@/types'
 import {
-  importFromUrl,
   importFromText,
   parseRecipeText,
   parseIngredientLine,
@@ -14,8 +13,6 @@ import {
 import {
   ArrowLeft,
   Upload,
-  Link2,
-  FileText,
   Loader2,
   Save,
   Plus,
@@ -27,7 +24,6 @@ import {
   CheckCircle2,
   Wand2,
   ClipboardPaste,
-  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,30 +39,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 
-type Mode = 'url' | 'text'
-
-const EMPTY_PARSED: ParsedRecipe = {
-  title: '',
-  summary: '',
-  ingredients: [],
-  method: [],
-  yield_quantity: '',
-  yield_unit: 'porções',
-  portions: '',
-  prep_minutes: '',
-  cook_minutes: '',
-  difficulty: '',
-  tips: '',
-}
-
 const ImportarReceita: React.FC = () => {
   const navigate = useNavigate()
 
-  const [mode, setMode] = useState<Mode>('url')
-  const [urlInput, setUrlInput] = useState('')
   const [textInput, setTextInput] = useState('')
 
-  const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
   const [parsed, setParsed] = useState<ParsedRecipe | null>(null)
   const [sourceLabel, setSourceLabel] = useState<string>('')
@@ -100,40 +77,6 @@ const ImportarReceita: React.FC = () => {
   }, [parsed])
 
   // --- Parsing actions ---
-
-  const handleParseUrl = async () => {
-    setParseError(null)
-    const url = urlInput.trim()
-    if (!url) {
-      setParseError('Cole a URL da receita para continuar.')
-      return
-    }
-    if (!/^https?:\/\//i.test(url)) {
-      setParseError('A URL deve começar com http:// ou https://')
-      return
-    }
-
-    setParsing(true)
-    try {
-      const result = await importFromUrl(url)
-      setParsed(result)
-      setSourceLabel(url)
-      toast({
-        title: 'Receita importada',
-        description: `Foram extraídos ${result.ingredients.length} ingrediente(s) e ${result.method.length} passo(s). Revise antes de salvar.`,
-      })
-    } catch (err: unknown) {
-      console.error('Erro ao importar URL:', err)
-      const errorObj = err as { message?: string; data?: { message?: string } }
-      const msg =
-        errorObj?.data?.message ||
-        errorObj?.message ||
-        'Não foi possível importar a receita da URL. Tente colar o texto manualmente.'
-      setParseError(msg)
-    } finally {
-      setParsing(false)
-    }
-  }
 
   const handleParseText = () => {
     setParseError(null)
@@ -365,8 +308,7 @@ const ImportarReceita: React.FC = () => {
             Importar Receita
           </h1>
           <p className="text-sm text-tinta-sec mt-0.5">
-            Cole uma URL ou o texto de uma receita que o sistema extrai a ficha técnica
-            automaticamente.
+            Cole o texto de uma receita que o sistema extrai a ficha técnica automaticamente.
           </p>
         </div>
 
@@ -405,116 +347,34 @@ const ImportarReceita: React.FC = () => {
       {/* INPUT STEP (hidden once we have a parsed result) */}
       {!hasParsed && (
         <section className="bg-white rounded-2xl p-6 sm:p-8 border border-marfim-border shadow-card space-y-6">
-          {/* Mode tabs */}
-          <div className="inline-flex p-1 bg-marfim-card rounded-xl border border-marfim-border flex-wrap">
-            <button
-              onClick={() => setMode('url')}
-              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                mode === 'url' ? 'bg-white text-verde shadow-xs' : 'text-tinta-sec hover:text-tinta'
-              }`}
-            >
-              <Link2 className="w-4 h-4" />
-              URL do site
-            </button>
-            <button
-              onClick={() => setMode('text')}
-              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                mode === 'text'
-                  ? 'bg-white text-verde shadow-xs'
-                  : 'text-tinta-sec hover:text-tinta'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              Texto da receita
-            </button>
-          </div>
-
-          {mode === 'url' ? (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="url" className="label-caps block mb-1.5">
-                  Endereço (URL) da receita
-                </Label>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Link2 className="w-4 h-4 text-tinta-ter absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <Input
-                      id="url"
-                      type="url"
-                      value={urlInput}
-                      onChange={(e) => setUrlInput(e.target.value)}
-                      placeholder="https://www.tudogostoso.com.br/receita/..."
-                      className="h-11 pl-10 bg-marfim/30 focus:bg-white rounded-xl focus-visible:ring-verde"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleParseUrl()
-                      }}
-                    />
-                  </div>
-                  <Button
-                    onClick={handleParseUrl}
-                    disabled={parsing}
-                    className="h-11 bg-verde hover:bg-verde-hover text-white rounded-xl shadow-md px-6 min-w-[150px]"
-                  >
-                    {parsing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Importando...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        Importar
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <p className="text-xs text-tinta-ter leading-relaxed">
-                Funciona com a maioria dos sites de receitas brasileiros (TudoGostoso, Panelinha,
-                Receitas Nestlé, etc.) e internacionais. O conteúdo é buscado pelo servidor para
-                evitar bloqueios de CORS.
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="rawText" className="label-caps block mb-1.5">
+                Cole aqui o texto completo da receita
+              </Label>
+              <Textarea
+                id="rawText"
+                rows={12}
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder={`Bolo de Cenoura\n\nIngredientes:\n3 cenouras médias\n2 xícaras de açúcar\n...\n\nModo de preparo:\n1. Bata as cenouras no liquidificador...\n2. Misture os ingredientes secos...`}
+                className="bg-marfim/30 focus:bg-white rounded-xl focus-visible:ring-verde text-sm leading-relaxed font-mono"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-tinta-ter leading-relaxed flex-1">
+                Mantenha os rótulos das seções (Ingredientes, Modo de preparo, Rendimento, Tempo,
+                Dificuldade) para uma extração mais precisa.
               </p>
+              <Button
+                onClick={handleParseText}
+                className="h-11 bg-verde hover:bg-verde-hover text-white rounded-xl shadow-md px-6 min-w-[150px]"
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                Estruturar
+              </Button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="rawText" className="label-caps block mb-1.5">
-                  Cole aqui o texto completo da receita
-                </Label>
-                <Textarea
-                  id="rawText"
-                  rows={12}
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  placeholder={`Bolo de Cenoura\n\nIngredientes:\n3 cenouras médias\n2 xícaras de açúcar\n...\n\nModo de preparo:\n1. Bata as cenouras no liquidificador...\n2. Misture os ingredientes secos...`}
-                  className="bg-marfim/30 focus:bg-white rounded-xl focus-visible:ring-verde text-sm leading-relaxed font-mono"
-                />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-tinta-ter leading-relaxed flex-1">
-                  Mantenha os rótulos das seções (Ingredientes, Modo de preparo, Rendimento, Tempo,
-                  Dificuldade) para uma extração mais precisa.
-                </p>
-                <Button
-                  onClick={handleParseText}
-                  disabled={parsing}
-                  className="h-11 bg-verde hover:bg-verde-hover text-white rounded-xl shadow-md px-6 min-w-[150px]"
-                >
-                  {parsing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Analisando...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Estruturar
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
+          </div>
 
           {parseError && (
             <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm">
@@ -534,9 +394,7 @@ const ImportarReceita: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-semibold text-tinta">1. Forneça o conteúdo</p>
-                <p className="text-xs text-tinta-sec mt-0.5">
-                  URL da receita ou o texto bruto da receita.
-                </p>
+                <p className="text-xs text-tinta-sec mt-0.5">Texto bruto da receita.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -564,17 +422,6 @@ const ImportarReceita: React.FC = () => {
           </div>
         </section>
       )}
-
-      {/* PARSING LOADING STATE */}
-      {parsing && !hasParsed && (
-        <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-[#1E1C16] rounded-2xl border border-marfim-border dark:border-[#322F26] shadow-card">
-          <Loader2 className="w-9 h-9 animate-spin text-verde mb-3" />
-          <p className="font-serif italic text-tinta-sec dark:text-[#B5AE9F]">
-            {mode === 'url' ? 'Buscando e analisando a página...' : 'Estruturando a receita...'}
-          </p>
-        </div>
-      )}
-
       {/* EDITABLE PREVIEW */}
       {hasParsed && parsed && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -590,32 +437,20 @@ const ImportarReceita: React.FC = () => {
               <CheckCircle2 className="w-5 h-5 text-verde shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-verde">Receita estruturada com sucesso</p>
-                <p className="text-xs text-verde/80 truncate flex items-center gap-1 mt-0.5">
+                <p className="text-xs text-verde/80 truncate mt-0.5">
                   <span>Fonte: {sourceLabel}</span>
-                  {parsed.sourceUrl && (
-                    <a
-                      href={parsed.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-0.5 hover:underline"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
                 </p>
               </div>
-              {mode === 'text' && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleReanalyze}
-                  className="text-verde hover:bg-verde/10 text-xs"
-                >
-                  <Wand2 className="w-3.5 h-3.5 mr-1" />
-                  Reanalisar
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleReanalyze}
+                className="text-verde hover:bg-verde/10 text-xs"
+              >
+                <Wand2 className="w-3.5 h-3.5 mr-1" />
+                Reanalisar
+              </Button>
             </div>
 
             {/* SECTION 1: BASIC INFO */}
@@ -1170,23 +1005,6 @@ const ImportarReceita: React.FC = () => {
                   passos
                 </span>
               </div>
-
-              {parsed.sourceUrl && (
-                <div className="pt-3 border-t border-marfim-border/70">
-                  <span className="label-caps block text-[9px] text-tinta-ter mb-1">
-                    Fonte original
-                  </span>
-                  <a
-                    href={parsed.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-bronze hover:underline break-all inline-flex items-start gap-1"
-                  >
-                    <ExternalLink className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>{parsed.sourceUrl}</span>
-                  </a>
-                </div>
-              )}
             </div>
 
             {/* Extraction summary */}

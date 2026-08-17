@@ -1,15 +1,10 @@
 // Client-side recipe import helpers.
 //
-// `fetchRecipeFromUrl` calls the backend proxy (pocketbase/hooks/recipe_import.js)
-// which fetches the page server-side (browsers can't CORS arbitrary sites),
-// extracts JSON-LD + meta + a cleaned text dump, and returns them here.
-//
-// `parseRecipeText` runs pure heuristics over that dump (or over raw text the
-// user pasted) to produce a PartialRecipe the user reviews and edits before
-// saving. Everything here is best-effort: partial results are fine because
-// the import page lets the user fix every field.
+// `parseRecipeText` runs pure heuristics over raw text the user pasted to
+// produce a PartialRecipe the user reviews and edits before saving. Everything
+// here is best-effort: partial results are fine because the import page lets
+// the user fix every field.
 
-import pb from '@/lib/pocketbase/client'
 import type { IngredientItem } from '@/types'
 
 /** Shape produced by the parser — every field optional. */
@@ -25,7 +20,6 @@ export interface ParsedRecipe {
   cook_minutes: string
   difficulty: string
   tips: string
-  sourceUrl?: string
 }
 
 const EMPTY_PARSED: ParsedRecipe = {
@@ -40,77 +34,6 @@ const EMPTY_PARSED: ParsedRecipe = {
   cook_minutes: '',
   difficulty: '',
   tips: '',
-}
-
-interface ProxyResponse {
-  url: string
-  pageTitle: string
-  jsonLd: unknown[]
-  meta: Record<string, string>
-  text: string
-}
-
-/** Fetch a recipe page through the backend proxy. Throws on error. */
-export async function fetchRecipeFromUrl(url: string): Promise<ProxyResponse> {
-  return await pb.send('/api/import-recipe', {
-    method: 'POST',
-    body: { url },
-  })
-}
-
-/**
- * Walk a parsed JSON-LD tree and return the first object whose @type (or
- * graph node) is a Recipe. schema.org graphs nest as { @graph: [...] }
- * and Recipe is often { @type: 'Recipe' } or ['Recipe', 'Article'].
- */
-function findRecipeJsonLd(node: unknown): Record<string, unknown> | null {
-  if (!node) return null
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      const found = findRecipeJsonLd(item)
-      if (found) return found
-    }
-    return null
-  }
-  if (typeof node === 'object') {
-    const obj = node as Record<string, unknown>
-    const t = obj['@type']
-    const types = Array.isArray(t) ? t.map(String) : t != null ? [String(t)] : []
-    if (types.some((x) => x.toLowerCase().includes('recipe'))) {
-      return obj
-    }
-    if (Array.isArray(obj['@graph'])) {
-      const found = findRecipeJsonLd(obj['@graph'])
-      if (found) return found
-    }
-  }
-  return null
-}
-
-function asString(v: unknown): string {
-  if (v == null) return ''
-  if (typeof v === 'string') return v.trim()
-  if (typeof v === 'number') return String(v)
-  if (Array.isArray(v)) return v.map(asString).join(' ').trim()
-  if (typeof v === 'object') {
-    const obj = v as Record<string, unknown>
-    // schema.org often nests { '@value': '...' } or { 'text': '...' }
-    if (typeof obj['@value'] === 'string') return String(obj['@value']).trim()
-    if (typeof obj['text'] === 'string') return String(obj['text']).trim()
-    if (typeof obj['name'] === 'string') return String(obj['name']).trim()
-  }
-  return ''
-}
-
-/** "PT15M" / "PT1H30M" -> minutes (0 if unparseable). */
-function isoDurationToMinutes(v: unknown): number {
-  const s = asString(v)
-  if (!s) return 0
-  const m = s.match(/^P(?:T)?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i)
-  if (!m) return 0
-  const h = parseInt(m[1] || '0', 10)
-  const min = parseInt(m[2] || '0', 10)
-  return h * 60 + min
 }
 
 /** Pull an integer (e.g. "4 porções" -> 4) out of a free-form string. */
@@ -149,79 +72,6 @@ function normalizeYieldUnit(raw: string): string {
 }
 
 const YIELD_UNITS = ['porções', 'unidades', 'fatias', 'xícaras', 'kg', 'g', 'L', 'ml']
-
-/**
- * Build a ParsedRecipe from a schema.org Recipe JSON-LD object. JSON-LD
- * (when present) is far more reliable than scraping text, so we prefer it.
- */
-function fromJsonLd(r: Record<string, unknown>): ParsedRecipe {
-  const out: ParsedRecipe = { ...EMPTY_PARSED }
-
-  out.title = asString(r['name']) || asString(r['headline'])
-
-  out.summary = asString(r['description'])
-
-  const recipeYield = asString(r['recipeYield'])
-  if (recipeYield) {
-    const ym = recipeYield.match(/^([\d.,]+)\s*(.*)$/)
-    if (ym) {
-      out.yield_quantity = ym[1].replace(/\./g, '').replace(/,/g, '.')
-      out.yield_unit = normalizeYieldUnit(ym[2]) || 'porções'
-    } else {
-      out.yield_quantity = firstInt(recipeYield)
-      out.yield_unit = 'porções'
-    }
-  }
-  const nutrition = r['nutrition'] as Record<string, unknown> | undefined
-  const servings = asString(r['recipeCategory']) || asString(nutrition?.servings)
-  if (servings && !out.yield_quantity) out.yield_quantity = firstInt(servings)
-
-  // Ingredients — schema.org uses recipeIngredient (string[]).
-  const rawIngs = Array.isArray(r['recipeIngredient'])
-    ? r['recipeIngredient']
-    : Array.isArray(r['ingredients'])
-      ? r['ingredients']
-      : []
-  out.ingredients = rawIngs.map(asString).filter(Boolean).map(parseIngredientLine)
-
-  // Instructions — string[] OR HowToStep[] with .text.
-  const rawInstr = r['recipeInstructions']
-  let steps: string[] = []
-  if (Array.isArray(rawInstr)) {
-    for (const s of rawInstr) {
-      if (typeof s === 'string') {
-        steps.push(s.trim())
-      } else if (s && typeof s === 'object') {
-        const t = asString((s as Record<string, unknown>)['text'])
-        if (t) steps.push(t)
-        else {
-          const n = asString((s as Record<string, unknown>)['name'])
-          if (n) steps.push(n)
-        }
-      }
-    }
-  } else if (typeof rawInstr === 'string') {
-    steps = rawInstr
-      .split(/\n|\r/)
-      .map((s) => s.trim())
-      .filter(Boolean)
-  }
-  out.method = steps
-
-  // Times — ISO 8601 duration or free text.
-  const prep = isoDurationToMinutes(r['prepTime']) || firstInt(asString(r['prepTime']))
-  out.prep_minutes = String(prep)
-  const cook = isoDurationToMinutes(r['cookTime']) || firstInt(asString(r['cookTime']))
-  out.cook_minutes = String(cook)
-
-  const diff = asString(r['difficulty']) || asString(r['recipeDifficulty'])
-  out.difficulty = normalizeDifficulty(diff)
-
-  const tipsRaw = r['recipeCuisine'] ? '' : asString(r['cookingMethod'])
-  out.tips = tipsRaw
-
-  return out
-}
 
 /**
  * Split a single ingredient line ("2 xícaras de farinha de trigo") into
@@ -457,7 +307,7 @@ function matchTimeMinutes(value: string): string {
  * bullet/numbered lines under each. Falls back gracefully: any content
  * we can't classify is simply ignored, and the user edits the rest.
  */
-export function parseRecipeText(rawText: string, opts?: { pageTitle?: string }): ParsedRecipe {
+export function parseRecipeText(rawText: string): ParsedRecipe {
   const out: ParsedRecipe = { ...EMPTY_PARSED }
 
   // Normalize line endings + strip leading bullets on every line so a
@@ -583,71 +433,10 @@ export function parseRecipeText(rawText: string, opts?: { pageTitle?: string }):
     }
   }
 
-  // Page title fallback (used when parsing a fetched URL).
-  if (!out.title && opts?.pageTitle) {
-    out.title = opts.pageTitle.replace(/\s*[|\-–—].*$/, '').trim()
-  }
-
   // Ensure a sane default yield_unit if we found a quantity but no unit.
   if (out.yield_quantity && !out.yield_unit) out.yield_unit = 'porções'
 
   return out
-}
-
-/**
- * Full pipeline for a URL: fetch via proxy, prefer JSON-LD, fall back to
- * text heuristics merged with the page <title>.
- */
-export async function importFromUrl(url: string): Promise<ParsedRecipe> {
-  const data = await fetchRecipeFromUrl(url)
-
-  // 1. Try schema.org Recipe JSON-LD first.
-  const ld = findRecipeJsonLd(data.jsonLd)
-  let parsed: ParsedRecipe
-  if (ld) {
-    parsed = fromJsonLd(ld)
-  } else {
-    parsed = parseRecipeText(data.text, { pageTitle: data.pageTitle })
-  }
-
-  // 2. Fill gaps from Open Graph / meta tags.
-  if (!parsed.title) {
-    parsed.title = data.meta['og:title'] || data.meta['twitter:title'] || data.pageTitle || ''
-  }
-  if (!parsed.summary) {
-    parsed.summary = data.meta['og:description'] || data.meta['description'] || ''
-  }
-
-  // 3. If JSON-LD gave ingredients/method but text scraper found more,
-  // merge (JSON-LD takes precedence, text fills missing pieces).
-  if (!ld) {
-    // already text-parsed
-  } else {
-    const textParsed = parseRecipeText(data.text, { pageTitle: data.pageTitle })
-    if (parsed.ingredients.length === 0 && textParsed.ingredients.length > 0) {
-      parsed.ingredients = textParsed.ingredients
-    }
-    if (parsed.method.length === 0 && textParsed.method.length > 0) {
-      parsed.method = textParsed.method
-    }
-    if (!parsed.tips && textParsed.tips) parsed.tips = textParsed.tips
-    if (!parsed.prep_minutes && textParsed.prep_minutes)
-      parsed.prep_minutes = textParsed.prep_minutes
-    if (!parsed.cook_minutes && textParsed.cook_minutes)
-      parsed.cook_minutes = textParsed.cook_minutes
-    if (!parsed.yield_quantity && textParsed.yield_quantity) {
-      parsed.yield_quantity = textParsed.yield_quantity
-      parsed.yield_unit = textParsed.yield_unit || 'porções'
-    }
-    if (!parsed.difficulty && textParsed.difficulty) parsed.difficulty = textParsed.difficulty
-  }
-
-  parsed.sourceUrl = url
-  if (parsed.yield_quantity && !parsed.yield_unit) parsed.yield_unit = 'porções'
-  if (parsed.yield_unit && !YIELD_UNITS.includes(parsed.yield_unit)) {
-    parsed.yield_unit = 'porções'
-  }
-  return parsed
 }
 
 /** Parse pasted raw text directly (no network). */
