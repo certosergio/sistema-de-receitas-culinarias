@@ -654,11 +654,25 @@ html.dark ::selection {
   }
 
   /* ---- Etiquetas (identification labels) sheet ---- */
-  #print-root .etiquetas-print-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 6mm !important;
+  /* Each "page" container fills the printable A4 area and holds exactly 6
+     etiquetas in a 3-column × 2-row grid. Pages break after themselves so
+     each new chunk of 6 lands on its own sheet. */
+  #print-root .etiquetas-print-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
   }
+  #print-root .etiquetas-print-page {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4mm !important;
+  }
+  /* Each etiqueta fills its grid cell evenly and never splits across pages. */
   #print-root .etiqueta {
+    min-height: 0 !important;
+    height: 100% !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     box-shadow: none !important;
@@ -670,12 +684,6 @@ html.dark ::selection {
   #print-root .etiquetas-print-wrapper *,
   #print-root .etiqueta * {
     border-radius: 0 !important;
-  }
-  /* The print sheet wrapper carries no padding/margin so the grid starts at
-     the top of the page area. */
-  #print-root .etiquetas-print-wrapper {
-    margin: 0 !important;
-    padding: 0 !important;
   }
   /* Reveal the full summary in print (no clamping). */
   #print-root .etiqueta p {

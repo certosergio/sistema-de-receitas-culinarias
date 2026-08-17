@@ -134,18 +134,38 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 
 /**
  * Print-only sheet of all etiquetas, portaled into #print-root so the
- * @media print CSS reveals just it. Renders a 3-column grid of etiquetas.
+ * @media print CSS reveals just it. Renders exactly 6 etiquetas per A4 page
+ * (a 3-column × 2-row grid). Each chunk of 6 recipes is wrapped in a
+ * "page" container that forces a page break after it (except the last).
  * Only the grid of etiquetas is rendered — no header, title or instructions —
  * so the printed page contains nothing but the etiquetas.
  */
+const LABELS_PER_PAGE = 6
+
 const EtiquetasPrintSheet: React.FC<{ recipes: Recipe[] }> = ({ recipes }) => {
+  // Group recipes into chunks of 6 — one chunk per printed A4 page.
+  const pages: Recipe[][] = []
+  for (let i = 0; i < recipes.length; i += LABELS_PER_PAGE) {
+    pages.push(recipes.slice(i, i + LABELS_PER_PAGE))
+  }
+
   return createPortal(
     <div className="etiquetas-print-wrapper font-sans text-tinta bg-white">
-      <div className="etiquetas-print-grid grid grid-cols-3 gap-4">
-        {recipes.map((recipe) => (
-          <Etiqueta key={recipe.id} recipe={recipe} />
-        ))}
-      </div>
+      {pages.map((pageRecipes, pageIdx) => (
+        <div
+          key={pageIdx}
+          className="etiquetas-print-page etiquetas-print-grid grid grid-cols-3 grid-rows-2 gap-[4mm] min-h-0"
+          style={
+            pageIdx < pages.length - 1
+              ? { breakAfter: 'page', pageBreakAfter: 'always' }
+              : undefined
+          }
+        >
+          {pageRecipes.map((recipe) => (
+            <Etiqueta key={recipe.id} recipe={recipe} />
+          ))}
+        </div>
+      ))}
     </div>,
     document.getElementById('print-root')!,
   )
