@@ -15,6 +15,7 @@ import {
   Utensils,
   Archive,
   History,
+  Columns2,
 } from 'lucide-react'
 import {
   getMealPlans,
@@ -39,6 +40,7 @@ import debounce from '@/lib/debounce'
 import { getRecipes, getRecipeCoverUrl } from '@/services/recipes'
 import { savePlanningHistory, type HistoryPlanData } from '@/services/planningHistory'
 import PlanningHistoryDialog from '@/components/PlanningHistory'
+import WeekComparisonDialog from '@/components/WeekComparison'
 import { getCategories } from '@/services/categories'
 import { isVegan } from '@/lib/dietary'
 import pb from '@/lib/pocketbase/client'
@@ -211,6 +213,7 @@ const Planejador: React.FC = () => {
 
   // Planning history (archived weeks) dialog + archiving state
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [compareOpen, setCompareOpen] = useState(false)
   const [archiving, setArchiving] = useState(false)
   // Whether the currently-viewed week is strictly in the past.
   const isPastWeek = useMemo(() => {
@@ -652,8 +655,8 @@ const Planejador: React.FC = () => {
       const prevEndIso = toISODate(addDays(prevWeek, 6))
       const prevPlans = prevPlansRef.current
       const prevNotes = prevNotesRef.current
-      if (prevPlans.length === 0) return
-      // Run async without blocking the render; read fresh recipe data.
+      if (prevPlans.length === 0)
+        return // Run async without blocking the render; read fresh recipe data.
       ;(async () => {
         try {
           const recipeIds = Array.from(new Set(prevPlans.map((p) => p.recipe).filter(Boolean)))
@@ -819,6 +822,15 @@ const Planejador: React.FC = () => {
           >
             <History className="w-3.5 h-3.5" />
             <span>Histórico</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setCompareOpen(true)}
+            className="border-bronze/40 bg-bronze/5 text-bronze hover:bg-bronze/10 rounded-xl h-10 px-3 text-xs font-semibold gap-1.5"
+            title="Comparar semanas lado a lado"
+          >
+            <Columns2 className="w-3.5 h-3.5" />
+            <span>Comparar</span>
           </Button>
           {isPastWeek && (
             <Button
@@ -1276,6 +1288,13 @@ const Planejador: React.FC = () => {
 
       {/* PLANNING HISTORY DIALOG */}
       <PlanningHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} />
+
+      {/* WEEK COMPARISON DIALOG */}
+      <WeekComparisonDialog
+        open={compareOpen}
+        onOpenChange={setCompareOpen}
+        currentWeekStart={weekStart}
+      />
     </div>
   )
 }
