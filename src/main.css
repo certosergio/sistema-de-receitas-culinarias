@@ -591,6 +591,15 @@ html.dark ::selection {
     visibility: hidden;
   }
 
+  /* Radix portals (Dialog, Popover, …) render directly on document.body,
+     parallel to #root, so they are not covered by the rule above. Hide them
+     during print so only #print-root (e.g. the EtiquetasPrintSheet grid) is
+     visible — preventing the on-screen dialog header, toolbar, buttons and
+     preview grid from leaking onto the printed pages. */
+  [data-radix-portal] {
+    display: none !important;
+  }
+
   /* Keep the print-root container invisible on screen. */
   #print-root {
     display: none;
