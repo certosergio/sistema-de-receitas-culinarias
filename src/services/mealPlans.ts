@@ -77,6 +77,58 @@ export async function removeMealPlan(id: string): Promise<void> {
   await pb.collection('meal_plans').delete(id)
 }
 
+// ----------------------------------------------------------------------------
+// Day notes (free-form per-day observations in the weekly planner)
+// ----------------------------------------------------------------------------
+
+export interface DayNote {
+  id: string
+  user: string
+  date: string // YYYY-MM-DD
+  notes: string
+  created: string
+  updated: string
+}
+
+/** Loads all day notes for the current user within [start, end] inclusive (YYYY-MM-DD). */
+export async function getDayNotes(start: string, end: string): Promise<DayNote[]> {
+  const user = pb.authStore.record
+  if (!user) return []
+  const rows = await pb.collection('day_notes').getFullList<DayNote>({
+    filter: `user = "${user.id}" && date >= "${start}" && date <= "${end}"`,
+    requestKey: null,
+  })
+  return rows
+}
+
+/** Upserts the notes text for a given date. Creates the record if absent,
+ *  updates it otherwise. An empty/whitespace string deletes the record. */
+export async function saveDayNote(date: string, notes: string): Promise<void> {
+  const user = pb.authStore.record
+  if (!user) throw new Error('Usuário não autenticado')
+  const trimmed = notes.trim()
+  try {
+    const existing = await pb
+      .collection('day_notes')
+      .getFirstListItem<DayNote>(`user = "${user.id}" && date = "${date}"`, { requestKey: null })
+    if (!trimmed) {
+      await pb.collection('day_notes').delete(existing.id)
+    } else {
+      await pb.collection('day_notes').update<DayNote>(existing.id, { notes })
+    }
+  } catch (err: unknown) {
+    // NotFoundError — create a new record.
+    const code = (err as { status?: number })?.status
+    if (code !== 404 && trimmed) throw err
+    if (!trimmed) return
+    await pb.collection('day_notes').create<DayNote>({
+      user: user.id,
+      date,
+      notes: trimmed,
+    })
+  }
+}
+
 /** Removes every plan in a slot (date+meal_type). */
 export async function removeMealPlanSlot(date: string, meal_type: MealType): Promise<void> {
   const user = pb.authStore.record

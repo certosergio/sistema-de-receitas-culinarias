@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CalendarDays,
@@ -20,12 +20,19 @@ import {
   removeMealPlan,
   clearMealPlansRange,
   setMealPlan,
+  getDayNotes,
+  saveDayNote,
   MEAL_LABELS,
   MEAL_ORDER,
   slotKey,
   type MealType,
   type MealPlan,
+  type DayNote,
 } from '@/services/mealPlans'
+import { exportWeekPlanPdf } from '@/lib/weekPlanPdf'
+import { Textarea } from '@/components/ui/textarea'
+import { FileDown } from 'lucide-react'
+import debounce from '@/lib/debounce'
 import { getRecipes, getRecipeCoverUrl } from '@/services/recipes'
 import { getCategories } from '@/services/categories'
 import { isVegan } from '@/lib/dietary'
@@ -525,6 +532,12 @@ const Planejador: React.FC = () => {
   const [shoppingLoading, setShoppingLoading] = useState(false)
   const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null)
 
+  // Day notes (per-day free-form observations)
+  const [notes, setNotes] = useState<Record<string, string>>({}) // isoDate -> text
+  const [exportingPdf, setExportingPdf] = useState(false)
+  // References to per-day debounced save functions, keyed by iso date.
+  const noteSaversRef = useRef<Record<string, (text: string) => void>>({})
+
   const weekStartIso = toISODate(weekStart)
   const weekEndIso = toISODate(addDays(weekStart, 6))
 
@@ -544,8 +557,14 @@ const Planejador: React.FC = () => {
   const load = useCallback(async () => {
     try {
       setLoading(true)
-      const rows = await getMealPlans(weekStartIso, weekEndIso)
+      const [rows, noteRows] = await Promise.all([
+        getMealPlans(weekStartIso, weekEndIso),
+        getDayNotes(weekStartIso, weekEndIso),
+      ])
       setPlans(rows)
+      const map: Record<string, string> = {}
+      for (const n of noteRows) map[n.date] = n.notes || ''
+      setNotes(map)
     } catch (err) {
       console.error('Erro ao carregar cardápio:', err)
       toast({
@@ -565,6 +584,52 @@ const Planejador: React.FC = () => {
   useRealtime('meal_plans', () => {
     load()
   })
+
+  useRealtime('day_notes', () => {
+    load()
+  })
+
+  // --- Day notes handling ---
+
+  // Returns a memoized, debounced saver for a given date.
+  const getNoteSaver = useCallback((date: string) => {
+    if (!noteSaversRef.current[date]) {
+      noteSaversRef.current[date] = debounce((text: string) => {
+        saveDayNote(date, text).catch((err) => {
+          console.error('Erro ao salvar anotação:', err)
+          toast({
+            title: 'Falha ao salvar anotação',
+            description: 'Não foi possível salvar a anotação do dia.',
+            variant: 'destructive',
+          })
+        })
+      }, 700)
+    }
+    return noteSaversRef.current[date]
+  }, [])
+
+  const handleNoteChange = useCallback(
+    (date: string, value: string) => {
+      setNotes((prev) => ({ ...prev, [date]: value }))
+      getNoteSaver(date)(value)
+    },
+    [getNoteSaver],
+  )
+
+  const handleNoteBlur = useCallback((date: string) => {
+    // Flush pending debounced save immediately on blur.
+    const saver = noteSaversRef.current[date]
+    if (saver && 'flush' in saver) (saver as { flush: () => void }).flush()
+  }, [])
+
+  // Flush any pending note saves when navigating away.
+  useEffect(() => {
+    return () => {
+      Object.values(noteSaversRef.current).forEach((saver) => {
+        if (saver && 'flush' in saver) (saver as { flush: () => void }).flush()
+      })
+    }
+  }, [])
 
   // Load categories once for the tray filter.
   useEffect(() => {
@@ -822,6 +887,57 @@ const Planejador: React.FC = () => {
     }
   }
 
+  // Helper: build the expanded recipe map for the current week (used by both
+  // the shopping list and the PDF export).
+  const getExpandedRecipes = useCallback(async (): Promise<Recipe[]> => {
+    const recipeIds = Array.from(new Set(plans.map((p) => p.recipe).filter(Boolean)))
+    if (recipeIds.length === 0) return []
+    const expandedById = new Map<string, Recipe>()
+    for (const p of plans) {
+      if (p.expand?.recipe) expandedById.set(p.expand.recipe.id, p.expand.recipe)
+    }
+    const toFetch = recipeIds.filter((id) => !expandedById.has(id))
+    if (toFetch.length > 0) {
+      const fetched = await Promise.all(
+        toFetch.map((id) => pb.collection('recipes').getOne<Recipe>(id, { requestKey: null })),
+      )
+      for (const r of fetched) expandedById.set(r.id, r)
+    }
+    return recipeIds.map((id) => expandedById.get(id)).filter((r): r is Recipe => Boolean(r))
+  }, [plans])
+
+  const handleExportPdf = useCallback(async () => {
+    setExportingPdf(true)
+    try {
+      const recipes = await getExpandedRecipes()
+      exportWeekPlanPdf({
+        weekStart,
+        days: days.map((d, idx) => ({
+          date: toISODate(d),
+          weekday: WEEKDAYS_FULL[idx],
+          meals: MEAL_ORDER.map((meal) => {
+            const plan = planMap[slotKey(toISODate(d), meal)]
+            const recipe = plan?.expand?.recipe
+            return { meal, label: MEAL_LABELS[meal], recipe }
+          }),
+          notes: notes[toISODate(d)] || '',
+        })),
+        recipes,
+        shoppingList: buildShoppingList(recipes),
+      })
+      toast({ title: 'PDF gerado', description: 'O planejamento semanal foi exportado.' })
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err)
+      toast({
+        title: 'Falha ao exportar PDF',
+        description: 'Não foi possível gerar o PDF.',
+        variant: 'destructive',
+      })
+    } finally {
+      setExportingPdf(false)
+    }
+  }, [weekStart, days, planMap, notes, getExpandedRecipes])
+
   const goToday = () => setWeekStart(startOfWeek(new Date()))
   const prevWeek = () => setWeekStart((w) => addDays(w, -7))
   const nextWeek = () => setWeekStart((w) => addDays(w, 7))
@@ -878,6 +994,18 @@ const Planejador: React.FC = () => {
             <span>Lista de compras</span>
           </Button>
           <Button
+            onClick={handleExportPdf}
+            disabled={busy || exportingPdf || !hasMeals}
+            className="bg-bronze hover:bg-bronze/90 text-white rounded-xl h-10 px-3 text-xs font-semibold gap-1.5"
+          >
+            {exportingPdf ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileDown className="w-3.5 h-3.5" />
+            )}
+            <span>Exportar PDF</span>
+          </Button>
+          <Button
             variant="outline"
             onClick={() => setClearOpen(true)}
             disabled={busy || !hasMeals}
@@ -919,6 +1047,9 @@ const Planejador: React.FC = () => {
                   dragOverKey={dragOverKey}
                   pendingRecipe={pendingRecipe}
                   busy={busy}
+                  noteText={notes[toISODate(day)] ?? ''}
+                  onNoteChange={handleNoteChange}
+                  onNoteBlur={handleNoteBlur}
                   onOpenPicker={openPicker}
                   onApplyPending={applyPending}
                   onRemove={handleRemove}
@@ -948,6 +1079,9 @@ const Planejador: React.FC = () => {
                   dragOverKey={dragOverKey}
                   pendingRecipe={pendingRecipe}
                   busy={busy}
+                  noteText={notes[toISODate(day)] ?? ''}
+                  onNoteChange={handleNoteChange}
+                  onNoteBlur={handleNoteBlur}
                   onOpenPicker={openPicker}
                   onApplyPending={applyPending}
                   onRemove={handleRemove}
@@ -1037,6 +1171,12 @@ const Planejador: React.FC = () => {
                               />
                             )
                           })}
+                          <DayNotesField
+                            date={iso}
+                            value={notes[iso] ?? ''}
+                            onChange={handleNoteChange}
+                            onBlur={handleNoteBlur}
+                          />
                         </div>
                       </AccordionContent>
                     </AccordionItem>
@@ -1317,6 +1457,9 @@ interface DayColumnProps {
   dragOverKey: string | null
   pendingRecipe: PendingRecipe | null
   busy: boolean
+  noteText: string
+  onNoteChange: (date: string, value: string) => void
+  onNoteBlur: (date: string) => void
   onOpenPicker: (date: string, meal: MealType) => void
   onApplyPending: (date: string, meal: MealType) => void
   onRemove: (id: string) => void
@@ -1336,6 +1479,9 @@ const DayColumn: React.FC<DayColumnProps> = ({
   dragOverKey,
   pendingRecipe,
   busy,
+  noteText,
+  onNoteChange,
+  onNoteBlur,
   onOpenPicker,
   onApplyPending,
   onRemove,
@@ -1405,8 +1551,30 @@ const DayColumn: React.FC<DayColumnProps> = ({
             />
           )
         })}
+        <DayNotesField date={iso} value={noteText} onChange={onNoteChange} onBlur={onNoteBlur} />
       </div>
     </div>
+  )
+}
+
+interface DayNotesFieldProps {
+  date: string
+  value: string
+  onChange: (date: string, value: string) => void
+  onBlur: (date: string) => void
+}
+
+/** Discreet auto-saving notes textarea rendered at the bottom of each day. */
+const DayNotesField: React.FC<DayNotesFieldProps> = ({ date, value, onChange, onBlur }) => {
+  return (
+    <Textarea
+      value={value}
+      onChange={(e) => onChange(date, e.target.value)}
+      onBlur={() => onBlur(date)}
+      placeholder="Anotações do dia..."
+      rows={2}
+      className="w-full resize-none bg-marfim/30 dark:bg-[#221F18]/60 border-marfim-border dark:border-[#322F26] rounded-lg text-[11px] leading-snug text-tinta dark:text-[#EFE9DD] placeholder:text-tinta-ter dark:placeholder:text-[#8F887B] focus-visible:ring-1 focus-visible:ring-bronze/50 focus-visible:border-bronze/40 px-2 py-1.5"
+    />
   )
 }
 
