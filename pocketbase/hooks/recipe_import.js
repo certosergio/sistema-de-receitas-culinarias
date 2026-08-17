@@ -8,8 +8,55 @@
 // the dump into structured recipe fields lives client-side so the user
 // can review and edit it before saving.
 routerAdd('POST', '/api/import-recipe', (e) => {
-  // Auth check — first thing in the handler body (no middleware arg).
-  const authRecord = e.requestInfo().authRecord
+  // Auth check — routerAdd routes bypass PocketBase's default auth
+  // middleware, so e.requestInfo().authRecord is always undefined here.
+  // We manually parse the Bearer JWT from the Authorization header.
+  let authRecord = null
+  try {
+    const headers = e.requestInfo().headers || {}
+    const authHeader = headers['Authorization'] || headers['authorization'] || ''
+    if (authHeader.indexOf('Bearer ') === 0) {
+      const token = authHeader.slice(7).trim()
+      const parts = token.split('.')
+      if (parts.length >= 2) {
+        // URL-safe base64 -> standard base64, with padding.
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+        while (b64.length % 4 !== 0) {
+          b64 += '='
+        }
+        // Pure-JS base64 decode (goja has no atob / $security.base64Decode).
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+        const lookup = {}
+        for (let i = 0; i < chars.length; i++) lookup[chars.charAt(i)] = i
+        let jsonStr = ''
+        // Strip any non-base64 chars (e.g. padding handled above).
+        const clean = b64.replace(/[^A-Za-z0-9+/=]/g, '')
+        for (let i = 0; i < clean.length; i += 4) {
+          const c1 = lookup[clean.charAt(i)] || 0
+          const c2 = lookup[clean.charAt(i + 1)] || 0
+          const c3 = lookup[clean.charAt(i + 2)]
+          const c4 = lookup[clean.charAt(i + 3)]
+          jsonStr += String.fromCharCode((c1 << 2) | (c2 >> 4))
+          if (clean.charAt(i + 2) !== '=') {
+            jsonStr += String.fromCharCode(((c2 & 15) << 4) | ((c3 || 0) >> 2))
+          }
+          if (clean.charAt(i + 3) !== '=') {
+            jsonStr += String.fromCharCode(((c3 & 3) << 6) | (c4 || 0))
+          }
+        }
+        const payload = JSON.parse(jsonStr)
+        if (payload && payload.id && payload.type === 'auth') {
+          try {
+            authRecord = $app.findRecordById('users', payload.id)
+          } catch (_) {
+            authRecord = null
+          }
+        }
+      }
+    }
+  } catch (_) {
+    authRecord = null
+  }
   if (!authRecord) {
     return e.json(401, { error: 'Autenticação necessária.' })
   }
