@@ -376,12 +376,12 @@ const ColecaoDetail: React.FC = () => {
 
       {/* EDIT MODAL */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="bg-white rounded-2xl border-marfim-border sm:max-w-md">
+        <DialogContent className="bg-white dark:bg-[#1E1C16] rounded-2xl border-marfim-border dark:border-[#322F26] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl font-bold text-tinta">
+            <DialogTitle className="font-serif text-2xl font-bold text-tinta dark:text-[#EFE9DD]">
               Editar Coleção
             </DialogTitle>
-            <DialogDescription className="text-xs text-tinta-sec">
+            <DialogDescription className="text-xs text-tinta-sec dark:text-[#B5AE9F]">
               Atualize o nome e a descrição da sua coleção.
             </DialogDescription>
           </DialogHeader>
@@ -397,11 +397,17 @@ const ColecaoDetail: React.FC = () => {
                   setName(e.target.value)
                   if (nameError) setNameError('')
                 }}
-                className={`h-11 bg-marfim/30 focus:bg-white rounded-xl ${
-                  nameError ? 'border-red-500' : 'focus-visible:ring-verde'
+                className={`h-11 bg-marfim/30 dark:bg-[#221F18]/60 focus:bg-white dark:focus:bg-[#15140F] rounded-xl ${
+                  nameError
+                    ? 'border-red-500 dark:border-[#E0806B]/60'
+                    : 'focus-visible:ring-verde dark:focus-visible:ring-[#3F614C]/60'
                 }`}
               />
-              {nameError && <p className="text-xs text-red-600 mt-1 font-medium">{nameError}</p>}
+              {nameError && (
+                <p className="text-xs text-red-600 dark:text-[#E0806B] mt-1 font-medium">
+                  {nameError}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="detDesc" className="label-caps block mb-1">
@@ -412,23 +418,23 @@ const ColecaoDetail: React.FC = () => {
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-marfim/30 focus:bg-white rounded-xl text-xs leading-relaxed"
+                className="bg-marfim/30 dark:bg-[#221F18]/60 focus:bg-white dark:focus:bg-[#15140F] rounded-xl text-xs leading-relaxed"
               />
             </div>
-            <DialogFooter className="pt-4 border-t border-marfim-border">
+            <DialogFooter className="pt-4 border-t border-marfim-border dark:border-[#322F26]">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditOpen(false)}
                 disabled={saving}
-                className="rounded-xl"
+                className="rounded-xl border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD]"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
-                className="bg-verde hover:bg-verde-hover text-white rounded-xl min-w-[100px]"
+                className="bg-verde dark:bg-[#24392C] hover:bg-verde-hover dark:hover:bg-[#2F4B3A] text-white dark:text-[#EFE9DD] rounded-xl min-w-[100px]"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar alterações'}
               </Button>
@@ -439,25 +445,30 @@ const ColecaoDetail: React.FC = () => {
 
       {/* DELETE DIALOG */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent className="bg-white rounded-2xl border-marfim-border">
+        <AlertDialogContent className="bg-white dark:bg-[#1E1C16] rounded-2xl border-marfim-border dark:border-[#322F26]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif text-xl text-tinta">
+            <AlertDialogTitle className="font-serif text-xl text-tinta dark:text-[#EFE9DD]">
               Excluir coleção?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-tinta-sec text-sm">
+            <AlertDialogDescription className="text-tinta-sec dark:text-[#B5AE9F] text-sm">
               Tem certeza que deseja remover a coleção{' '}
-              <strong className="text-tinta">&ldquo;{collection.name}&rdquo;</strong>? As receitas
-              não serão excluídas, apenas desvinculadas.
+              <strong className="text-tinta dark:text-[#EFE9DD]">
+                &ldquo;{collection.name}&rdquo;
+              </strong>
+              ? As receitas não serão excluídas, apenas desvinculadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting} className="rounded-xl">
+            <AlertDialogCancel
+              disabled={deleting}
+              className="rounded-xl border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD]"
+            >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-erro hover:bg-erro/90 text-white rounded-xl"
+              className="bg-erro dark:bg-[#B4553F] hover:bg-erro/90 dark:hover:bg-[#9A4634] text-white dark:text-[#EFE9DD] rounded-xl"
             >
               {deleting ? 'Excluindo...' : 'Sim, excluir'}
             </AlertDialogAction>
@@ -467,13 +478,13 @@ const ColecaoDetail: React.FC = () => {
 
       {/* SHARE DIALOG */}
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-        <DialogContent className="bg-white rounded-2xl border-marfim-border sm:max-w-md">
+        <DialogContent className="bg-white dark:bg-[#1E1C16] rounded-2xl border-marfim-border dark:border-[#322F26] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl font-bold text-tinta flex items-center gap-2">
-              <Share2 className="w-5 h-5 text-bronze" />
+            <DialogTitle className="font-serif text-2xl font-bold text-tinta dark:text-[#EFE9DD] flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-bronze dark:text-[#D4A86A]" />
               Compartilhar Coleção
             </DialogTitle>
-            <DialogDescription className="text-xs text-tinta-sec">
+            <DialogDescription className="text-xs text-tinta-sec dark:text-[#B5AE9F]">
               Gere um link público para que qualquer pessoa possa visualizar as receitas desta
               coleção — sem precisar de conta.
             </DialogDescription>
@@ -485,13 +496,13 @@ const ColecaoDetail: React.FC = () => {
                 <div>
                   <Label className="label-caps block mb-1.5">Link público</Label>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 flex items-center gap-2 px-3 h-11 rounded-xl bg-marfim/40 border border-marfim-border text-xs text-tinta font-mono overflow-hidden">
-                      <Link2 className="w-4 h-4 text-verde shrink-0" />
+                    <div className="flex-1 flex items-center gap-2 px-3 h-11 rounded-xl bg-marfim/40 dark:bg-[#221F18]/60 border border-marfim-border dark:border-[#322F26] text-xs text-tinta dark:text-[#EFE9DD] font-mono overflow-hidden">
+                      <Link2 className="w-4 h-4 text-verde dark:text-[#A9C4B5] shrink-0" />
                       <span className="truncate">{shareUrl}</span>
                     </div>
                     <Button
                       onClick={handleCopyLink}
-                      className="bg-verde hover:bg-verde-hover text-white rounded-xl h-11 px-3 gap-1.5 shrink-0"
+                      className="bg-verde dark:bg-[#24392C] hover:bg-verde-hover dark:hover:bg-[#2F4B3A] text-white dark:text-[#EFE9DD] rounded-xl h-11 px-3 gap-1.5 shrink-0"
                     >
                       {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       <span className="text-xs">{copied ? 'Copiado' : 'Copiar'}</span>
@@ -499,7 +510,7 @@ const ColecaoDetail: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 leading-relaxed">
+                <div className="rounded-xl border border-amber-200 dark:border-[#C29A3B]/40 bg-amber-50 dark:bg-[#3A3220] p-3 text-xs text-amber-800 dark:text-[#E0C068] leading-relaxed">
                   Qualquer pessoa com este link poderá ver as receitas da coleção. Não o compartilhe
                   publicamente se preferir manter privacidade.
                 </div>
@@ -508,7 +519,7 @@ const ColecaoDetail: React.FC = () => {
                   variant="outline"
                   onClick={handleDisableShare}
                   disabled={shareBusy}
-                  className="w-full border-red-200 text-red-600 hover:bg-red-50 rounded-xl h-10 gap-2"
+                  className="w-full border-red-200 dark:border-[#B4553F]/40 text-red-600 dark:text-[#E0806B] hover:bg-red-50 dark:hover:bg-[#4A241C]/30 rounded-xl h-10 gap-2"
                 >
                   {shareBusy ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -520,17 +531,17 @@ const ColecaoDetail: React.FC = () => {
               </>
             ) : (
               <div className="text-center py-4 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-bronze-subtle border border-bronze/30 flex items-center justify-center mx-auto">
-                  <Link2 className="w-8 h-8 text-bronze" />
+                <div className="w-16 h-16 rounded-full bg-bronze-subtle dark:bg-[#3A2E1C] border border-bronze/30 dark:border-[#D4A86A]/30 flex items-center justify-center mx-auto">
+                  <Link2 className="w-8 h-8 text-bronze dark:text-[#D4A86A]" />
                 </div>
-                <p className="text-sm text-tinta-sec leading-relaxed">
+                <p className="text-sm text-tinta-sec dark:text-[#B5AE9F] leading-relaxed">
                   O compartilhamento está desativado. Ao ativá-lo, um link único será gerado para
                   acesso público a esta coleção.
                 </p>
                 <Button
                   onClick={handleEnableShare}
                   disabled={shareBusy}
-                  className="bg-verde hover:bg-verde-hover text-white rounded-xl h-10 px-5 gap-2"
+                  className="bg-verde dark:bg-[#24392C] hover:bg-verde-hover dark:hover:bg-[#2F4B3A] text-white dark:text-[#EFE9DD] rounded-xl h-10 px-5 gap-2"
                 >
                   {shareBusy ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

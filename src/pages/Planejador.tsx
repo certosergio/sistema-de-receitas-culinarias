@@ -832,14 +832,14 @@ const Planejador: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-16">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-marfim-border">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-marfim-border dark:border-[#322F26]">
         <div>
           <span className="label-caps block mb-1">Organize sua semana</span>
           <div className="flex items-center gap-3">
-            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-tinta tracking-tight">
+            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-tinta dark:text-[#EFE9DD] tracking-tight">
               Planejador de Cardápio
             </h1>
-            <span className="text-xs font-mono bg-marfim-card px-2.5 py-1 rounded-full border border-marfim-border text-tinta font-medium">
+            <span className="text-xs font-mono bg-marfim-card dark:bg-[#221F18] px-2.5 py-1 rounded-full border border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD] font-medium">
               {totalMeals} {totalMeals === 1 ? 'refeição' : 'refeições'}
             </span>
           </div>
@@ -1133,13 +1133,13 @@ const Planejador: React.FC = () => {
       <Sheet open={pickerOpen} onOpenChange={setPickerOpen}>
         <SheetContent
           side="right"
-          className="bg-white border-marfim-border w-full sm:max-w-md flex flex-col p-0"
+          className="bg-white dark:bg-[#1E1C16] border-marfim-border dark:border-[#322F26] w-full sm:max-w-md flex flex-col p-0"
         >
-          <SheetHeader className="px-5 pt-5 pb-3 border-b border-marfim-border text-left">
-            <SheetTitle className="font-serif text-2xl font-bold text-tinta">
+          <SheetHeader className="px-5 pt-5 pb-3 border-b border-marfim-border dark:border-[#322F26] text-left">
+            <SheetTitle className="font-serif text-2xl font-bold text-tinta dark:text-[#EFE9DD]">
               Escolher receita
             </SheetTitle>
-            <SheetDescription className="text-xs text-tinta-sec">
+            <SheetDescription className="text-xs text-tinta-sec dark:text-[#B5AE9F]">
               {pickerTarget
                 ? `${MEAL_LABELS[pickerTarget.meal]} · ${parseISODate(pickerTarget.date).getDate()}/${
                     parseISODate(pickerTarget.date).getMonth() + 1
@@ -1148,14 +1148,14 @@ const Planejador: React.FC = () => {
             </SheetDescription>
           </SheetHeader>
 
-          <div className="px-5 py-3 border-b border-marfim-border">
+          <div className="px-5 py-3 border-b border-marfim-border dark:border-[#322F26]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-ter" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-ter dark:text-[#8F887B]" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por título, resumo ou dica..."
-                className="pl-9 h-10 bg-marfim/30 rounded-xl"
+                className="pl-9 h-10 bg-marfim/30 dark:bg-[#221F18]/60 rounded-xl"
               />
             </div>
           </div>
@@ -1163,10 +1163,10 @@ const Planejador: React.FC = () => {
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
             {searching ? (
               <div className="flex items-center justify-center py-10">
-                <Loader2 className="w-6 h-6 animate-spin text-verde" />
+                <Loader2 className="w-6 h-6 animate-spin text-verde dark:text-[#A9C4B5]" />
               </div>
             ) : recipeResults.length === 0 ? (
-              <div className="text-center py-10 text-sm text-tinta-sec">
+              <div className="text-center py-10 text-sm text-tinta-sec dark:text-[#B5AE9F]">
                 Nenhuma receita encontrada.
               </div>
             ) : (

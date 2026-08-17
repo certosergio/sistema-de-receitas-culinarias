@@ -17,6 +17,8 @@ import {
   X,
   ChevronRight,
   User as UserIcon,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -128,7 +130,7 @@ const Layout: React.FC = () => {
           <div className="px-4 pt-4">
             <Button
               onClick={() => navigate('/receitas/nova')}
-              className="w-full bg-bronze hover:bg-bronze-hover text-white shadow-md hover:shadow-lg font-medium flex items-center justify-center gap-2 rounded-lg py-5 active:scale-[0.98] transition-all"
+              className="w-full bg-bronze hover:bg-bronze-hover text-white shadow-md hover:shadow-lg font-medium flex items-center justify-center gap-2 rounded-lg py-5 active:scale-[0.98] transition-all dark:bg-[#B98A4F] dark:hover:bg-[#C99860] dark:text-[#15140F]"
             >
               <Plus className="w-4 h-4" />
               <span>+ Nova Receita</span>
@@ -139,12 +141,12 @@ const Layout: React.FC = () => {
           <div className="px-4 pt-3">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white transition-all"
+              className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white transition-all dark:text-[#EFE9DD]/80 dark:hover:bg-white/10 dark:hover:text-[#EFE9DD]"
               aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
             >
               <span className="flex items-center gap-3">
                 {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 text-bronze" />
+                  <Sun className="w-4 h-4 text-bronze dark:text-[#E3BD84]" />
                 ) : (
                   <Moon className="w-4 h-4 text-white/50" />
                 )}
@@ -152,7 +154,7 @@ const Layout: React.FC = () => {
               </span>
               <span
                 className={`relative w-9 h-5 rounded-full transition-colors ${
-                  theme === 'dark' ? 'bg-bronze' : 'bg-white/15'
+                  theme === 'dark' ? 'bg-bronze dark:bg-[#B98A4F]' : 'bg-white/15'
                 }`}
               >
                 <span
@@ -351,7 +353,7 @@ const Layout: React.FC = () => {
       <div className="lg:hidden fixed bottom-6 right-6 z-30">
         <button
           onClick={() => navigate('/receitas/nova')}
-          className="w-14 h-14 rounded-full bg-bronze hover:bg-bronze-hover text-white flex items-center justify-center shadow-xl hover:shadow-2xl active:scale-95 transition-all border-2 border-white"
+          className="w-14 h-14 rounded-full bg-bronze hover:bg-bronze-hover text-white flex items-center justify-center shadow-xl hover:shadow-2xl active:scale-95 transition-all border-2 border-white dark:bg-[#B98A4F] dark:hover:bg-[#C99860] dark:text-[#15140F] dark:border-[#15140F]"
           aria-label="Criar nova receita"
         >
           <Plus className="w-7 h-7" />

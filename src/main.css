@@ -145,8 +145,117 @@ html.dark .bg-marfim\/60 {
 html.dark .bg-verde-subtle {
   background-color: #1e3326;
 }
+html.dark .bg-verde {
+  background-color: #24392c;
+}
+html.dark .hover\:bg-verde:hover,
+html.dark .hover\:bg-verde-hover:hover {
+  background-color: #2f4b3a;
+}
+html.dark .bg-bronze {
+  background-color: #8c6433;
+}
 html.dark .bg-bronze-subtle {
   background-color: #3a2e1c;
+}
+html.dark .bg-erro {
+  background-color: #b4553f;
+}
+html.dark .hover\:bg-erro\/90:hover {
+  background-color: #9a4634;
+}
+html.dark .bg-erro\/10,
+html.dark .bg-erro\/15 {
+  background-color: rgba(180, 85, 63, 0.18);
+}
+html.dark .hover\:bg-erro\/15:hover {
+  background-color: rgba(180, 85, 63, 0.25);
+}
+html.dark .text-erro {
+  color: #e0806b;
+}
+html.dark .hover\:text-erro:hover {
+  color: #f0a08f;
+}
+html.dark .border-verde-light {
+  border-color: rgba(169, 196, 181, 0.4);
+}
+html.dark .ring-verde\/30 {
+  --tw-ring-color: rgba(169, 196, 181, 0.35);
+}
+html.dark .ring-verde\/40 {
+  --tw-ring-color: rgba(169, 196, 181, 0.45);
+}
+html.dark .border-bronze {
+  border-color: rgba(212, 168, 106, 0.4);
+}
+html.dark .text-white {
+  color: #efe9dd;
+}
+html.dark .border-white {
+  border-color: rgba(239, 233, 221, 0.3);
+}
+html.dark .bg-bronze\/10,
+html.dark .hover\:bg-bronze\/10:hover {
+  background-color: rgba(185, 138, 79, 0.16);
+}
+html.dark .bg-verde-subtle\/40,
+html.dark .hover\:bg-verde-subtle\/40:hover {
+  background-color: rgba(30, 51, 38, 0.6);
+}
+html.dark .ring-1 {
+  box-shadow: 0 0 0 1px var(--tw-ring-color, currentColor);
+}
+
+/* Subtle marfim-tinted input/section surfaces used across forms. */
+html.dark .bg-marfim\/20,
+html.dark .bg-marfim\/30 {
+  background-color: rgba(34, 31, 24, 0.6);
+}
+html.dark .bg-marfim-card\/30 {
+  background-color: rgba(34, 31, 24, 0.45);
+}
+html.dark .hover\:bg-marfim-card\/50:hover {
+  background-color: rgba(34, 31, 24, 0.6);
+}
+
+/* Ring focus accents adapted for dark. */
+html.dark .focus-visible\:ring-verde:focus-visible,
+html.dark .focus-visible\:ring-verde:focus {
+  --tw-ring-color: rgba(169, 196, 181, 0.5);
+}
+html.dark .focus-visible\:ring-bronze:focus-visible,
+html.dark .focus-visible\:ring-bronze:focus {
+  --tw-ring-color: rgba(212, 168, 106, 0.5);
+}
+html.dark .focus-visible\:ring-red-500:focus-visible,
+html.dark .focus-visible\:ring-red-500:focus {
+  --tw-ring-color: rgba(224, 128, 107, 0.55);
+}
+
+/* Bronze outline buttons (Importar Receita) keep contrast in dark. */
+html.dark .border-bronze\/40 {
+  border-color: rgba(212, 168, 106, 0.45);
+}
+
+/* Verde-subtle read-only display boxes (Tempo Total). */
+html.dark .bg-verde-subtle {
+  background-color: #1e3326;
+}
+
+/* Emerald-600 (custo) and other green accents. */
+html.dark .text-emerald-600 {
+  color: #6fae86;
+}
+
+/* slate/zinc grays used in a few status texts. */
+html.dark .text-slate-400,
+html.dark .text-slate-500 {
+  color: #8f887b;
+}
+html.dark .text-slate-600,
+html.dark .text-slate-700 {
+  color: #b5ae9f;
 }
 
 html.dark .text-tinta {
@@ -175,9 +284,262 @@ html.dark .group:hover .group-hover\:text-verde\/80 {
 html.dark .border-marfim-border {
   border-color: #322f26;
 }
+html.dark .border-marfim-border\/40,
 html.dark .border-marfim-border\/70,
 html.dark .border-marfim-border\/80 {
   border-color: rgba(50, 47, 38, 0.7);
+}
+
+/* Inputs that lighten on focus stay readable in dark mode. */
+html.dark .focus\:bg-white:focus {
+  background-color: #2a261d;
+}
+
+/* Opacity/alpha brand surfaces — darken and keep them legible. */
+html.dark .bg-marfim\/40,
+html.dark .bg-marfim\/50 {
+  background-color: rgba(34, 31, 24, 0.6);
+}
+html.dark .bg-marfim\/90 {
+  background-color: rgba(30, 28, 22, 0.92);
+}
+html.dark .bg-marfim-card\/50,
+html.dark .bg-marfim-card\/60 {
+  background-color: rgba(34, 31, 24, 0.55);
+}
+html.dark .bg-verde\/10,
+html.dark .hover\:bg-verde\/10:hover {
+  background-color: rgba(47, 75, 58, 0.35);
+}
+html.dark .bg-verde\/80,
+html.dark .bg-verde\/90 {
+  background-color: #2f4b3a;
+}
+html.dark .bg-bronze\/5,
+html.dark .bg-bronze\/10,
+html.dark .bg-bronze\/15 {
+  background-color: rgba(185, 138, 79, 0.16);
+}
+html.dark .bg-bronze\/20 {
+  background-color: rgba(185, 138, 79, 0.22);
+}
+html.dark .bg-bronze\/80 {
+  background-color: #8c6433;
+}
+html.dark .hover\:bg-bronze-subtle:hover {
+  background-color: #3a2e1c;
+}
+html.dark .bg-bronze-subtle\/40 {
+  background-color: rgba(58, 46, 28, 0.55);
+}
+html.dark .bg-verde-subtle\/40,
+html.dark .bg-verde-subtle\/60 {
+  background-color: rgba(30, 51, 38, 0.6);
+}
+
+/* Tinta dark overlays (hero gradients / difficulty pills). */
+html.dark .bg-tinta\/50,
+html.dark .bg-tinta\/60,
+html.dark .bg-tinta\/65 {
+  background-color: rgba(14, 13, 10, 0.7);
+}
+html.dark .bg-tinta\/80,
+html.dark .bg-tinta\/90 {
+  background-color: #15140f;
+}
+html.dark .hover\:bg-tinta\/90:hover {
+  background-color: #0e0d0a;
+}
+html.dark .hover\:bg-tinta\/80:hover {
+  background-color: #15140f;
+}
+html.dark .bg-black\/20 {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Red / destructive accents adapted for dark. */
+html.dark .bg-red-50,
+html.dark .hover\:bg-red-50:hover,
+html.dark .focus\:bg-red-50:focus {
+  background-color: rgba(180, 85, 63, 0.15);
+}
+html.dark .border-red-200 {
+  border-color: rgba(180, 85, 63, 0.4);
+}
+html.dark .text-red-600,
+html.dark .text-red-700,
+html.dark .text-red-800 {
+  color: #e0806b;
+}
+html.dark .hover\:text-red-700:hover,
+html.dark .focus\:text-red-700:hover,
+html.dark .focus\:text-red-700:focus,
+html.dark .hover\:text-red-800:hover {
+  color: #f0a08f;
+}
+html.dark .hover\:bg-red-50:hover .text-red-600,
+html.dark .hover\:bg-red-700 {
+  background-color: #b4553f;
+}
+html.dark .bg-red-600 {
+  background-color: #b4553f;
+}
+html.dark .bg-red-700,
+html.dark .hover\:bg-red-700:hover {
+  background-color: #9a4634;
+}
+html.dark .text-red-500 {
+  color: #e0806b;
+}
+html.dark .border-red-500 {
+  border-color: rgba(224, 128, 107, 0.5);
+}
+
+/* Amber (glúten/laticínios warnings + nutritional bars). */
+html.dark .bg-amber-50 {
+  background-color: rgba(194, 154, 59, 0.16);
+}
+html.dark .border-amber-200,
+html.dark .border-amber-300 {
+  border-color: rgba(194, 154, 59, 0.4);
+}
+html.dark .text-amber-700,
+html.dark .text-amber-800 {
+  color: #e0c068;
+}
+
+/* Brand-tinted borders in dark. */
+html.dark .border-verde\/20,
+html.dark .border-verde\/30,
+html.dark .border-verde\/40,
+html.dark .border-verde\/50,
+html.dark .border-verde\/60 {
+  border-color: rgba(169, 196, 181, 0.28);
+}
+html.dark .border-bronze\/20,
+html.dark .border-bronze\/30,
+html.dark .border-bronze\/40,
+html.dark .border-bronze\/50 {
+  border-color: rgba(212, 168, 106, 0.32);
+}
+html.dark .hover\:border-bronze\/50:hover {
+  border-color: rgba(212, 168, 106, 0.5);
+}
+html.dark .ring-bronze\/30,
+html.dark .ring-bronze\/40 {
+  --tw-ring-color: rgba(212, 168, 106, 0.35);
+}
+
+/* Bronze text stays warm in dark. */
+html.dark .text-bronze,
+html.dark .hover\:text-bronze:hover,
+html.dark .hover\:text-bronze-dark:hover {
+  color: #d4a86a;
+}
+html.dark .group:hover .group-hover\:text-bronze {
+  color: #d4a86a;
+}
+html.dark .text-bronze-light,
+html.dark .group:hover .group-hover\:text-bronze-light {
+  color: #e3bd84;
+}
+html.dark .text-bronze-dark {
+  color: #d4a86a;
+}
+
+/* RecipeDetail "Dicas do Chef" gradient + the hero "via-tinta/65". */
+html.dark .bg-gradient-to-br.from-\[\#FAF5EE\],
+html.dark .bg-gradient-to-br.from-\[\#FAF5EE\]\.to-\[\#F5ECE0\] {
+  background-image: linear-gradient(to bottom right, #221f18, #1a1813);
+}
+html.dark .bg-gradient-to-t.from-tinta,
+html.dark .bg-gradient-to-t.from-tinta\/50,
+html.dark .bg-gradient-to-t.from-tinta\/60 {
+  --tw-gradient-from: rgba(14, 13, 10, 0.85) var(--tw-gradient-from-position);
+}
+html.dark .bg-gradient-to-t.from-tinta\/65 {
+  --tw-gradient-from: rgba(14, 13, 10, 0.7) var(--tw-gradient-from-position);
+}
+html.dark .bg-gradient-to-t.from-tinta\/50 {
+  --tw-gradient-from: rgba(14, 13, 10, 0.6) var(--tw-gradient-from-position);
+}
+
+/* White-on-cover chips / buttons keep a frosted dark look. */
+html.dark .bg-white\/20 {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+html.dark .border-white\/20,
+html.dark .border-white\/30 {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+html.dark .hover\:bg-white\/5:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+html.dark .hover\:bg-white\/10:hover,
+html.dark .focus\:bg-white\/10:focus {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+html.dark .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+html.dark .bg-white\/15 {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+html.dark .bg-white\/60 {
+  background-color: rgba(30, 28, 22, 0.6);
+}
+html.dark .text-white\/50,
+html.dark .text-white\/60 {
+  color: rgba(239, 233, 221, 0.55);
+}
+html.dark .text-white\/70 {
+  color: rgba(239, 233, 221, 0.75);
+}
+html.dark .hover\:text-white\/80:hover,
+html.dark .group:hover .group-hover\:text-white\/80 {
+  color: rgba(239, 233, 221, 0.85);
+}
+
+/* Verde-hover link text (Categories/Techniques/Colecoes "Ver receitas"). */
+html.dark .text-verde-hover,
+html.dark .group:hover .group-hover\:text-verde-hover {
+  color: #a9c4b5;
+}
+html.dark .text-verde-light {
+  color: #a9c4b5;
+}
+
+/* Sidebar footer "Sair" destructive text already red-400; keep. */
+html.dark .text-red-300,
+html.dark .hover\:text-red-200:hover,
+html.dark .focus\:text-red-300:focus {
+  color: #f0a08f;
+}
+html.dark .text-red-400 {
+  color: #e0806b;
+}
+
+/* Emerald-700 (custo icon) warm in dark. */
+html.dark .text-emerald-700 {
+  color: #6fae86;
+}
+
+/* amber-600 (cozimento icon) and amber-200/400 (award chip accents). */
+html.dark .text-amber-600,
+html.dark .text-amber-200,
+html.dark .text-amber-400 {
+  color: #e0c068;
+}
+
+/* Nutritional progress bar tracks (bg-white) already remapped; bar fills keep. */
+html.dark .bg-amber-500 {
+  background-color: #c29a3b;
+}
+
+/* selection */
+html.dark .selection\:bg-bronze-subtle ::selection,
+html.dark ::selection {
+  background: rgba(185, 138, 79, 0.3);
 }
 
 @layer utilities {

@@ -389,12 +389,12 @@ const Categories: React.FC = () => {
 
       {/* MODAL CREATE / EDIT */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="bg-white rounded-2xl border-marfim-border sm:max-w-md">
+        <DialogContent className="bg-white dark:bg-[#1E1C16] rounded-2xl border-marfim-border dark:border-[#322F26] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl font-bold text-tinta">
+            <DialogTitle className="font-serif text-2xl font-bold text-tinta dark:text-[#EFE9DD]">
               {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
             </DialogTitle>
-            <DialogDescription className="text-xs text-tinta-sec">
+            <DialogDescription className="text-xs text-tinta-sec dark:text-[#B5AE9F]">
               Organize seu acervo definindo o nome, apresentação e cor da seção gastronômica.
             </DialogDescription>
           </DialogHeader>
@@ -412,11 +412,17 @@ const Categories: React.FC = () => {
                   if (nameError) setNameError('')
                 }}
                 placeholder="Ex.: Sobremesas &amp; Confeitaria"
-                className={`h-11 bg-marfim/30 focus:bg-white rounded-xl ${
-                  nameError ? 'border-red-500' : 'focus-visible:ring-verde'
+                className={`h-11 bg-marfim/30 dark:bg-[#221F18]/60 focus:bg-white dark:focus:bg-[#15140F] rounded-xl ${
+                  nameError
+                    ? 'border-red-500 dark:border-[#E0806B]/60'
+                    : 'focus-visible:ring-verde dark:focus-visible:ring-[#3F614C]/60'
                 }`}
               />
-              {nameError && <p className="text-xs text-red-600 mt-1 font-medium">{nameError}</p>}
+              {nameError && (
+                <p className="text-xs text-red-600 dark:text-[#E0806B] mt-1 font-medium">
+                  {nameError}
+                </p>
+              )}
             </div>
 
             <div>
@@ -429,13 +435,13 @@ const Categories: React.FC = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descreva as características das receitas agrupadas nesta seção..."
-                className="bg-marfim/30 focus:bg-white rounded-xl text-xs leading-relaxed"
+                className="bg-marfim/30 dark:bg-[#221F18]/60 focus:bg-white dark:focus:bg-[#15140F] rounded-xl text-xs leading-relaxed"
               />
             </div>
 
             <div>
               <Label className="label-caps block mb-2 flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-bronze" />
+                <Palette className="w-3.5 h-3.5 text-bronze dark:text-[#D4A86A]" />
                 <span>Cor de Destaque</span>
               </Label>
               <div className="flex items-center gap-2">
@@ -445,7 +451,9 @@ const Categories: React.FC = () => {
                     key={c}
                     onClick={() => setColor(c)}
                     className={`w-7 h-7 rounded-full transition-transform ${
-                      color === c ? 'scale-125 ring-2 ring-tinta ring-offset-2' : 'hover:scale-110'
+                      color === c
+                        ? 'scale-125 ring-2 ring-tinta dark:ring-[#EFE9DD] ring-offset-2 dark:ring-offset-[#1E1C16]'
+                        : 'hover:scale-110'
                     }`}
                     style={{ backgroundColor: c }}
                   />
@@ -453,20 +461,20 @@ const Categories: React.FC = () => {
               </div>
             </div>
 
-            <DialogFooter className="pt-4 border-t border-marfim-border">
+            <DialogFooter className="pt-4 border-t border-marfim-border dark:border-[#322F26]">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setModalOpen(false)}
                 disabled={saving}
-                className="rounded-xl"
+                className="rounded-xl border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD]"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
-                className="bg-verde hover:bg-verde-hover text-white rounded-xl min-w-[100px]"
+                className="bg-verde dark:bg-[#24392C] hover:bg-verde-hover dark:hover:bg-[#2F4B3A] text-white dark:text-[#EFE9DD] rounded-xl min-w-[100px]"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -483,24 +491,30 @@ const Categories: React.FC = () => {
 
       {/* ALERT DIALOG DELETE */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-white rounded-2xl border-marfim-border">
+        <AlertDialogContent className="bg-white dark:bg-[#1E1C16] rounded-2xl border-marfim-border dark:border-[#322F26]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif text-xl text-tinta">
+            <AlertDialogTitle className="font-serif text-xl text-tinta dark:text-[#EFE9DD]">
               Excluir categoria?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-tinta-sec text-sm">
+            <AlertDialogDescription className="text-tinta-sec dark:text-[#B5AE9F] text-sm">
               Tem certeza que deseja remover a categoria{' '}
-              <strong className="text-tinta">&ldquo;{categoryToDelete?.name}&rdquo;</strong>?
+              <strong className="text-tinta dark:text-[#EFE9DD]">
+                &ldquo;{categoryToDelete?.name}&rdquo;
+              </strong>
+              ?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting} className="rounded-xl">
+            <AlertDialogCancel
+              disabled={deleting}
+              className="rounded-xl border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD]"
+            >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
+              className="bg-red-600 dark:bg-[#B4553F] hover:bg-red-700 dark:hover:bg-[#9A4634] text-white dark:text-[#EFE9DD] rounded-xl"
             >
               {deleting ? 'Excluindo...' : 'Sim, excluir'}
             </AlertDialogAction>

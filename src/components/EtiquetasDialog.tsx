@@ -51,34 +51,34 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const activeAnimal = ANIMAL_FLAG_META.filter((m) => state[m.key])
 
   return (
-    <article className="etiqueta print-avoid-break flex flex-col bg-white border border-marfim-border rounded-lg overflow-hidden shadow-sm">
+    <article className="etiqueta print-avoid-break flex flex-col bg-white dark:bg-[#1E1C16] border border-marfim-border dark:border-[#322F26] rounded-lg overflow-hidden shadow-sm">
       {/* Top accent bar */}
-      <div className="h-1.5 bg-verde" />
+      <div className="h-1.5 bg-verde dark:bg-[#24392C]" />
 
       <div className="flex flex-col flex-1 px-5 py-4">
         {/* Discreet recipe code (db id) */}
         <div className="flex items-center justify-between mb-2">
-          <span className="label-caps text-[9px] text-bronze flex items-center gap-1">
+          <span className="label-caps text-[9px] text-bronze dark:text-[#D4A86A] flex items-center gap-1">
             <Tag className="w-2.5 h-2.5" />
             Receita
           </span>
-          <span className="font-mono text-[9px] text-tinta-ter tracking-wide select-all">
+          <span className="font-mono text-[9px] text-tinta-ter dark:text-[#8F887B] tracking-wide select-all">
             #{recipe.id.slice(-8).toUpperCase()}
           </span>
         </div>
 
         {/* Recipe name — featured */}
-        <h3 className="font-serif text-xl font-bold text-tinta leading-tight mb-1.5">
+        <h3 className="font-serif text-xl font-bold text-tinta dark:text-[#EFE9DD] leading-tight mb-1.5">
           {recipe.title}
         </h3>
 
         {/* Summary / description */}
-        <p className="text-[11px] text-tinta-sec leading-relaxed flex-1 line-clamp-[6]">
+        <p className="text-[11px] text-tinta-sec dark:text-[#B5AE9F] leading-relaxed flex-1 line-clamp-[6]">
           {recipe.summary || 'Sem resumo cadastrado.'}
         </p>
 
         {/* Footer: dietary indicators */}
-        <footer className="mt-3 pt-2.5 border-t border-dashed border-marfim-border">
+        <footer className="mt-3 pt-2.5 border-t border-dashed border-marfim-border dark:border-[#322F26]">
           {vegan ? (
             <div className="flex items-center gap-1.5">
               <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-verde-subtle text-verde border border-verde/30">
@@ -108,7 +108,7 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             <div className="flex items-center gap-1.5 mt-1.5">
               <span
                 title="Contém glúten"
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-300 dark:border-[#C29A3B]/40 bg-amber-50 dark:bg-[#3A3220] text-amber-800 dark:text-[#E0C068]"
               >
                 <Wheat className="w-3 h-3" />
                 <span className="text-[9px] font-semibold uppercase tracking-wide">Glúten</span>

@@ -368,7 +368,7 @@ const ImportRecipeDialog: React.FC<ImportRecipeDialogProps> = ({
                     id="prev-title"
                     value={parsed.title}
                     onChange={(e) => updateField('title', e.target.value)}
-                    className="h-10 bg-marfim/30 focus:bg-white rounded-lg text-sm"
+                    className="h-10 bg-marfim/30 dark:bg-[#221F18]/60 focus:bg-white dark:focus:bg-[#15140F] rounded-lg text-sm"
                   />
                 </div>
                 <div>

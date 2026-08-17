@@ -654,21 +654,21 @@ const RecipesList: React.FC = () => {
         {/* RECIPES GRID (lg:col-span-3) */}
         <div className="lg:col-span-3">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-marfim-border shadow-card">
-              <Loader2 className="w-8 h-8 animate-spin text-verde mb-3" />
-              <p className="text-sm font-serif italic text-tinta-sec">
+            <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-[#1E1C16] rounded-2xl border border-marfim-border dark:border-[#322F26] shadow-card">
+              <Loader2 className="w-8 h-8 animate-spin text-verde dark:text-[#A9C4B5] mb-3" />
+              <p className="text-sm font-serif italic text-tinta-sec dark:text-[#B5AE9F]">
                 Consultando fichas técnicas do acervo...
               </p>
             </div>
           ) : recipes.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-marfim-border shadow-card">
-              <div className="w-16 h-16 rounded-full bg-marfim-card border border-marfim-border flex items-center justify-center mx-auto mb-4 text-tinta-ter">
+            <div className="bg-white dark:bg-[#1E1C16] rounded-2xl p-12 text-center border border-dashed border-marfim-border dark:border-[#322F26] shadow-card">
+              <div className="w-16 h-16 rounded-full bg-marfim-card dark:bg-[#221F18] border border-marfim-border dark:border-[#322F26] flex items-center justify-center mx-auto mb-4 text-tinta-ter dark:text-[#8F887B]">
                 <ChefHat className="w-8 h-8" />
               </div>
-              <h3 className="font-serif text-2xl font-bold text-tinta">
+              <h3 className="font-serif text-2xl font-bold text-tinta dark:text-[#EFE9DD]">
                 Nenhuma receita encontrada
               </h3>
-              <p className="text-sm text-tinta-sec max-w-md mx-auto mt-2 mb-6 leading-relaxed">
+              <p className="text-sm text-tinta-sec dark:text-[#B5AE9F] max-w-md mx-auto mt-2 mb-6 leading-relaxed">
                 Não encontramos registros correspondentes aos critérios de busca ou filtros
                 selecionados.
               </p>
@@ -677,14 +677,14 @@ const RecipesList: React.FC = () => {
                   <Button
                     variant="outline"
                     onClick={clearAllFilters}
-                    className="border-marfim-border text-tinta rounded-xl"
+                    className="border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD] rounded-xl"
                   >
                     Limpar filtros
                   </Button>
                 )}
                 <Button
                   onClick={() => navigate('/receitas/nova')}
-                  className="bg-verde hover:bg-verde-hover text-white rounded-xl shadow-md"
+                  className="bg-verde dark:bg-[#24392C] hover:bg-verde-hover dark:hover:bg-[#2F4B3A] text-white dark:text-[#EFE9DD] rounded-xl shadow-md"
                 >
                   + Nova Receita
                 </Button>

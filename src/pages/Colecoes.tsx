@@ -298,12 +298,12 @@ const Colecoes: React.FC = () => {
 
       {/* CREATE / EDIT MODAL */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="bg-white rounded-2xl border-marfim-border sm:max-w-md">
+        <DialogContent className="bg-white dark:bg-[#1E1C16] rounded-2xl border-marfim-border dark:border-[#322F26] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl font-bold text-tinta">
+            <DialogTitle className="font-serif text-2xl font-bold text-tinta dark:text-[#EFE9DD]">
               {editing ? 'Editar Coleção' : 'Nova Coleção'}
             </DialogTitle>
-            <DialogDescription className="text-xs text-tinta-sec">
+            <DialogDescription className="text-xs text-tinta-sec dark:text-[#B5AE9F]">
               Agrupe receitas por tema, estação, técnica ou qualquer critério que desejar.
             </DialogDescription>
           </DialogHeader>
@@ -320,11 +320,17 @@ const Colecoes: React.FC = () => {
                   if (nameError) setNameError('')
                 }}
                 placeholder="Ex.: Receitas de Inverno / Menu de Natal"
-                className={`h-11 bg-marfim/30 focus:bg-white rounded-xl ${
-                  nameError ? 'border-red-500' : 'focus-visible:ring-verde'
+                className={`h-11 bg-marfim/30 dark:bg-[#221F18]/60 focus:bg-white dark:focus:bg-[#15140F] rounded-xl ${
+                  nameError
+                    ? 'border-red-500 dark:border-[#E0806B]/60'
+                    : 'focus-visible:ring-verde dark:focus-visible:ring-[#3F614C]/60'
                 }`}
               />
-              {nameError && <p className="text-xs text-red-600 mt-1 font-medium">{nameError}</p>}
+              {nameError && (
+                <p className="text-xs text-red-600 dark:text-[#E0806B] mt-1 font-medium">
+                  {nameError}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="colDesc" className="label-caps block mb-1">
@@ -336,23 +342,23 @@ const Colecoes: React.FC = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descreva o propósito desta coleção..."
-                className="bg-marfim/30 focus:bg-white rounded-xl text-xs leading-relaxed"
+                className="bg-marfim/30 dark:bg-[#221F18]/60 focus:bg-white dark:focus:bg-[#15140F] rounded-xl text-xs leading-relaxed"
               />
             </div>
-            <DialogFooter className="pt-4 border-t border-marfim-border">
+            <DialogFooter className="pt-4 border-t border-marfim-border dark:border-[#322F26]">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setModalOpen(false)}
                 disabled={saving}
-                className="rounded-xl"
+                className="rounded-xl border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD]"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
-                className="bg-verde hover:bg-verde-hover text-white rounded-xl min-w-[100px]"
+                className="bg-verde dark:bg-[#24392C] hover:bg-verde-hover dark:hover:bg-[#2F4B3A] text-white dark:text-[#EFE9DD] rounded-xl min-w-[100px]"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -369,25 +375,30 @@ const Colecoes: React.FC = () => {
 
       {/* DELETE CONFIRM */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent className="bg-white rounded-2xl border-marfim-border">
+        <AlertDialogContent className="bg-white dark:bg-[#1E1C16] rounded-2xl border-marfim-border dark:border-[#322F26]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif text-xl text-tinta">
+            <AlertDialogTitle className="font-serif text-xl text-tinta dark:text-[#EFE9DD]">
               Excluir coleção?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-tinta-sec text-sm">
+            <AlertDialogDescription className="text-tinta-sec dark:text-[#B5AE9F] text-sm">
               Tem certeza que deseja remover a coleção{' '}
-              <strong className="text-tinta">&ldquo;{toDelete?.name}&rdquo;</strong>? As receitas
-              não serão excluídas, apenas desvinculadas desta coleção.
+              <strong className="text-tinta dark:text-[#EFE9DD]">
+                &ldquo;{toDelete?.name}&rdquo;
+              </strong>
+              ? As receitas não serão excluídas, apenas desvinculadas desta coleção.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting} className="rounded-xl">
+            <AlertDialogCancel
+              disabled={deleting}
+              className="rounded-xl border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD]"
+            >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
+              className="bg-red-600 dark:bg-[#B4553F] hover:bg-red-700 dark:hover:bg-[#9A4634] text-white dark:text-[#EFE9DD] rounded-xl"
             >
               {deleting ? 'Excluindo...' : 'Sim, excluir'}
             </AlertDialogAction>
