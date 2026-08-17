@@ -142,24 +142,30 @@ const ImportarReceita: React.FC = () => {
       setParseError('Cole o texto completo da receita para continuar.')
       return
     }
-    setParsing(true)
-    // Small delay so the spinner is visible on fast parses.
-    setTimeout(() => {
-      try {
-        const result = importFromText(text)
-        setParsed(result)
-        setSourceLabel('Texto colado')
-        toast({
-          title: 'Receita estruturada',
-          description: `Foram extraídos ${result.ingredients.length} ingrediente(s) e ${result.method.length} passo(s). Revise antes de salvar.`,
-        })
-      } catch (err) {
-        console.error('Erro ao analisar texto:', err)
-        setParseError('Não foi possível analisar o texto. Verifique o conteúdo e tente novamente.')
-      } finally {
-        setParsing(false)
+    // Parsing is a pure local heuristic — run it synchronously instead of
+    // deferring with setTimeout, which only delayed the UI feedback.
+    try {
+      const result = importFromText(text)
+      const isEmpty =
+        !result.title.trim() &&
+        result.ingredients.filter((i) => i.name.trim()).length === 0 &&
+        result.method.filter((m) => m.trim()).length === 0
+      if (isEmpty) {
+        setParseError(
+          'Não foi possível estruturar a receita. Verifique se o texto contém ingredientes e modo de preparo.',
+        )
+        return
       }
-    }, 250)
+      setParsed(result)
+      setSourceLabel('Texto colado')
+      toast({
+        title: 'Receita estruturada',
+        description: `Foram extraídos ${result.ingredients.length} ingrediente(s) e ${result.method.length} passo(s). Revise antes de salvar.`,
+      })
+    } catch (err) {
+      console.error('Erro ao analisar texto:', err)
+      setParseError('Não foi possível analisar o texto. Verifique o conteúdo e tente novamente.')
+    }
   }
 
   const handleReset = () => {

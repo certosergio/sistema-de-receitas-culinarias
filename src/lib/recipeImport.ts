@@ -322,20 +322,111 @@ export function parseIngredientLine(line: string): IngredientItem {
 
 // --- Text-section heuristics ---
 
+/**
+ * Normalize a line for header matching: lowercase + strip diacritics so
+ * "INGREDIENTES", "Ingredientes", "Preparação" and "preparacao" all match
+ * the same ASCII pattern. Used only for header detection, never for the
+ * extracted text itself.
+ */
+function normalizeForMatch(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+// Patterns are ASCII-only (accents already stripped by normalizeForMatch).
+// Trailing punctuation is tolerant: "Ingredientes", "Ingredientes:",
+// "Ingredientes :", "Ingredientes)" and "Ingredientes -" all match.
 const SECTION_PATTERNS: { field: keyof ParsedRecipe; re: RegExp }[] = [
   // Ingredients
   {
     field: 'ingredients',
-    re: /^(ingredientes|ingredients|lista de ingredientes|mise en place)\s*:?\s*$/i,
+    re: /^(ingredientes|ingredients|lista de ingredientes|mise en place)\s*[:\-)]?\s*$/,
   },
   // Method
   {
     field: 'method',
-    re: /^(modo de preparo|preparo|preparação|modo de fazer|preparo da receita|instructions|instructions?|preparation|directions|passo a passo|elaboração)\s*:?\s*$/i,
+    re: /^(modo de preparo|preparo|preparacao|modo de fazer|preparo da receita|instructions?|preparation|directions|passo a passo|elaboracao|como fazer|como preparar)\s*[:\-)]?\s*$/,
   },
   // Tips
-  { field: 'tips', re: /^(dicas|tips|sugest[õo]es|notas|observa[çc][õo]es)\s*:?\s*$/i },
+  {
+    field: 'tips',
+    re: /^(dicas|tips|sugestoes|notas|observacoes)\s*[:\-)]?\s*$/,
+  },
 ]
+
+/**
+ * Block-based fallback used when NO section header was recognized. Splits the
+ * text into blocks separated by blank lines and classifies each block by
+ * scoring how "ingredient-like" and "method-like" its lines are, then picks
+ * the best-scoring block for each role (preferring different blocks when
+ * possible). Best-effort, like the rest of this module.
+ */
+function fallbackBlockParse(rawLines: string[]): {
+  ingredients: string[]
+  method: string[]
+  titleCandidates: string[]
+} {
+  // Group consecutive non-empty lines into blocks.
+  const blocks: { lines: string[]; index: number }[] = []
+  let cur: string[] = []
+  rawLines.forEach((l) => {
+    if (l.trim() === '') {
+      if (cur.length) blocks.push({ lines: cur, index: blocks.length })
+      cur = []
+    } else {
+      cur.push(l.trim())
+    }
+  })
+  if (cur.length) blocks.push({ lines: cur, index: blocks.length })
+
+  const titleCandidates: string[] = []
+  const ingBlocks: { lines: string[]; score: number; index: number }[] = []
+  const methBlocks: { lines: string[]; score: number; index: number }[] = []
+
+  const unitRe =
+    /\b(xic|colher|copo|lata|caixa|pacote|dente|fatia|pitada|maco|ramo|envelope|sache|sachê|kg|gramas|ml|litros)\b/i
+  const verbRe =
+    /\b(asse|misture|bata|coloque|leve|aqueça|aqueca|refogue|temper|deixe|adicione|adicion|junte|acrescent|acrescente|cozinhe|frite|frit|passe|corte|despeje|unte|mexa|incorpore|reserve|sirva|desligue)\b/i
+
+  for (const block of blocks) {
+    let ingScore = 0
+    let methScore = 0
+    for (const line of block.lines) {
+      // Ingredient-like: starts with a quantity.
+      if (/^\d+(?:[.,]\d+)?\s/.test(line) || /^\d+\s*\/\s*\d/.test(line)) ingScore++
+      if (unitRe.test(line)) ingScore++
+      // Method-like: longer sentence with several words.
+      const words = line.split(/\s+/).length
+      if (words >= 4 && line.length >= 25) methScore++
+      if (verbRe.test(line)) methScore++
+    }
+    if (ingScore > 0) ingBlocks.push({ lines: block.lines, score: ingScore, index: block.index })
+    if (methScore > 0) methBlocks.push({ lines: block.lines, score: methScore, index: block.index })
+    // A short single-line block is a likely title.
+    if (block.lines.length === 1) {
+      const t = block.lines[0]
+      if (t.length <= 80 && t.split(' ').length <= 12) titleCandidates.push(t)
+    }
+  }
+
+  ingBlocks.sort((a, b) => b.score - a.score)
+  methBlocks.sort((a, b) => b.score - a.score)
+
+  const chosenIng = ingBlocks[0]
+  // Prefer a method block that is NOT the chosen ingredient block.
+  const chosenMeth = methBlocks.find((b) => b.index !== chosenIng?.index) || methBlocks[0]
+
+  const ingredients = chosenIng ? chosenIng.lines : []
+  const method = chosenMeth
+    ? chosenMeth.lines
+        .map((l) => l.replace(/^\s*(?:passo\s*)?\d+[).:-]\s*/i, '').trim())
+        .filter(Boolean)
+    : []
+
+  return { ingredients, method, titleCandidates }
+}
 
 const YIELD_LABEL_RE =
   /^(rendimento|serve|por[çc][õo]es|porcao|porcoes|rendimento da receita|yields?|servings?)\s*:\s*(.*)$/i
@@ -383,6 +474,7 @@ export function parseRecipeText(rawText: string, opts?: { pageTitle?: string }):
   const methodLines: string[] = []
   const tipLines: string[] = []
   const titleCandidates: string[] = []
+  let sawSectionHeader = false
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim()
@@ -431,12 +523,16 @@ export function parseRecipeText(rawText: string, opts?: { pageTitle?: string }):
       continue
     }
 
-    // Section headers.
+    // Section headers — normalized (case- + accent-insensitive) so that
+    // "INGREDIENTES", "Ingredientes", "Ingredientes:", "Preparação" and
+    // "preparacao" all match the same ASCII pattern.
     let matchedSection = false
+    const norm = normalizeForMatch(line)
     for (const pat of SECTION_PATTERNS) {
-      if (pat.re.test(line)) {
+      if (pat.re.test(norm)) {
         current = pat.field
         matchedSection = true
+        sawSectionHeader = true
         break
       }
     }
@@ -456,6 +552,21 @@ export function parseRecipeText(rawText: string, opts?: { pageTitle?: string }):
       if (titleCandidates.length < 3 && line.length <= 80 && line.split(' ').length <= 12) {
         titleCandidates.push(line)
       }
+    }
+  }
+
+  // Fallback: if NO section header was recognized at all, try block-based
+  // classification so headerless pastes still yield ingredients + method.
+  if (!sawSectionHeader) {
+    const fb = fallbackBlockParse(lines)
+    if (ingredientLines.length === 0 && fb.ingredients.length > 0) {
+      fb.ingredients.forEach((l) => ingredientLines.push(l))
+    }
+    if (methodLines.length === 0 && fb.method.length > 0) {
+      fb.method.forEach((l) => methodLines.push(l))
+    }
+    if (titleCandidates.length === 0) {
+      fb.titleCandidates.forEach((l) => titleCandidates.push(l))
     }
   }
 
