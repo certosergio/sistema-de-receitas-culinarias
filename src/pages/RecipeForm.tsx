@@ -128,6 +128,8 @@ const RecipeForm: React.FC = () => {
             contains_eggs: Boolean(rec.contains_eggs),
             contains_fish: Boolean(rec.contains_fish),
             contains_honey: Boolean(rec.contains_honey),
+            contains_ave: Boolean(rec.contains_ave),
+            contains_camarao: Boolean(rec.contains_camarao),
           })
 
           if (Array.isArray(rec.ingredients) && rec.ingredients.length > 0) {
@@ -356,6 +358,8 @@ const RecipeForm: React.FC = () => {
       contains_eggs: dietary.contains_eggs,
       contains_fish: dietary.contains_fish,
       contains_honey: dietary.contains_honey,
+      contains_ave: dietary.contains_ave,
+      contains_camarao: dietary.contains_camarao,
       coverFile,
       removeCover,
     }

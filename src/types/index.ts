@@ -61,12 +61,14 @@ export interface Recipe {
   method?: string[]
   tips?: string
   author?: string
-  /** Dietary restriction flags (migration 0006). */
+  /** Dietary restriction flags (migration 0006 + 0009). */
   contains_gluten?: boolean
   contains_dairy?: boolean
   contains_eggs?: boolean
   contains_fish?: boolean
   contains_honey?: boolean
+  contains_ave?: boolean
+  contains_camarao?: boolean
   created: string
   updated: string
 }
@@ -124,6 +126,8 @@ export interface SharedRecipe {
   contains_eggs?: boolean
   contains_fish?: boolean
   contains_honey?: boolean
+  contains_ave?: boolean
+  contains_camarao?: boolean
 }
 
 export interface SharedCollection {
@@ -171,10 +175,12 @@ export interface RecipeFormData {
   tips: string
   coverFile?: File | null
   removeCover?: boolean
-  /** Dietary restriction flags (migration 0006). */
+  /** Dietary restriction flags (migration 0006 + 0009). */
   contains_gluten?: boolean
   contains_dairy?: boolean
   contains_eggs?: boolean
   contains_fish?: boolean
   contains_honey?: boolean
+  contains_ave?: boolean
+  contains_camarao?: boolean
 }

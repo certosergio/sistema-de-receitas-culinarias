@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-17T01:34:00.974Z",
+  "generatedAt": "2026-08-17T01:47:48.499Z",
   "collections": [
     {
       "name": "users",
@@ -330,6 +330,18 @@
         },
         {
           "name": "contains_honey",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contains_ave",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contains_camarao",
           "type": "bool",
           "required": false,
           "system": false

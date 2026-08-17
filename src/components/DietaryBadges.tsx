@@ -1,5 +1,5 @@
 import React from 'react'
-import { Check, Leaf, Wheat, MilkOff, Egg, Fish, Droplet } from 'lucide-react'
+import { Check, Leaf, Wheat, MilkOff, Egg, Fish, Droplet, Bird, Shrimp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { DietaryState } from '@/lib/dietary'
 import { DIETARY_TOGGLES, isVegan, type DietaryFlagKey } from '@/lib/dietary'
@@ -20,6 +20,8 @@ const FLAG_ICON: Record<DietaryFlagKey, React.ComponentType<{ className?: string
   contains_eggs: Egg,
   contains_fish: Fish,
   contains_honey: Droplet,
+  contains_ave: Bird,
+  contains_camarao: Shrimp,
 }
 
 export const DietaryChips: React.FC<DietaryChipsProps> = ({ state, onChange }) => {
@@ -61,7 +63,7 @@ export const DietaryChips: React.FC<DietaryChipsProps> = ({ state, onChange }) =
         title={
           vegan
             ? 'Nenhum ingrediente de origem animal marcado — receita classificada como vegana.'
-            : 'Sem laticínios, ovos, peixe e mel, o selo Vegana aparece automaticamente.'
+            : 'Sem laticínio, ovos, peixe, mel, ave e camarão, o selo Vegana aparece automaticamente.'
         }
       >
         <Leaf className="w-3.5 h-3.5" />
@@ -70,7 +72,7 @@ export const DietaryChips: React.FC<DietaryChipsProps> = ({ state, onChange }) =
       </div>
       <p className="text-[11px] text-tinta-ter leading-relaxed">
         O selo <strong>Vegana</strong> é exibido automaticamente quando nenhum ingrediente de origem
-        animal (laticínios, ovos, peixe, mel) está marcado.
+        animal (laticínio, ovos, peixe, mel, ave, camarão) está marcado.
       </p>
     </div>
   )
@@ -87,7 +89,9 @@ export const DietaryBadges: React.FC<{ state: DietaryState }> = ({ state }) => {
     state.contains_dairy ||
     state.contains_eggs ||
     state.contains_fish ||
-    state.contains_honey
+    state.contains_honey ||
+    state.contains_ave ||
+    state.contains_camarao
 
   if (!hasAny) return null
 
@@ -108,7 +112,7 @@ export const DietaryBadges: React.FC<{ state: DietaryState }> = ({ state }) => {
       {dairyFree && !vegan && (
         <Badge className="bg-marfim-card text-bronze border border-bronze/20 text-[11px] gap-1 px-2.5 py-0.5">
           <MilkOff className="w-3 h-3" />
-          Sem laticínios
+          Sem laticínio
         </Badge>
       )}
       {state.contains_gluten && (
@@ -120,7 +124,7 @@ export const DietaryBadges: React.FC<{ state: DietaryState }> = ({ state }) => {
       {state.contains_dairy && (
         <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-[11px] gap-1 px-2.5 py-0.5">
           <MilkOff className="w-3 h-3" />
-          Com laticínios
+          Com laticínio
         </Badge>
       )}
       {state.contains_eggs && (
@@ -139,6 +143,18 @@ export const DietaryBadges: React.FC<{ state: DietaryState }> = ({ state }) => {
         <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-[11px] gap-1 px-2.5 py-0.5">
           <Droplet className="w-3 h-3" />
           Com mel
+        </Badge>
+      )}
+      {state.contains_ave && (
+        <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-[11px] gap-1 px-2.5 py-0.5">
+          <Bird className="w-3 h-3" />
+          Com ave
+        </Badge>
+      )}
+      {state.contains_camarao && (
+        <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-[11px] gap-1 px-2.5 py-0.5">
+          <Shrimp className="w-3 h-3" />
+          Com camarão
         </Badge>
       )}
     </div>

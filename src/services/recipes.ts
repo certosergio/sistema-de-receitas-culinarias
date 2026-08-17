@@ -115,8 +115,15 @@ export async function getRecipes(options: RecipeFilterOptions = {}): Promise<Rec
 function matchesDietary(r: Recipe, facetId: string): boolean {
   switch (facetId) {
     case 'vegana':
-      // No animal-origin flag set.
-      return !r.contains_dairy && !r.contains_eggs && !r.contains_fish && !r.contains_honey
+      // No animal-origin flag set (dairy, eggs, fish, honey, ave, camarão).
+      return (
+        !r.contains_dairy &&
+        !r.contains_eggs &&
+        !r.contains_fish &&
+        !r.contains_honey &&
+        !r.contains_ave &&
+        !r.contains_camarao
+      )
     case 'sem-gluten':
       return !r.contains_gluten
     case 'sem-laticinios':
@@ -184,12 +191,14 @@ export async function createRecipe(formData: RecipeFormData): Promise<Recipe> {
   if (formData.tips) payload.append('tips', formData.tips)
   if (user?.id) payload.append('author', user.id)
 
-  // Dietary restriction flags (migration 0006).
+  // Dietary restriction flags (migration 0006 + 0009).
   payload.append('contains_gluten', String(Boolean(formData.contains_gluten)))
   payload.append('contains_dairy', String(Boolean(formData.contains_dairy)))
   payload.append('contains_eggs', String(Boolean(formData.contains_eggs)))
   payload.append('contains_fish', String(Boolean(formData.contains_fish)))
   payload.append('contains_honey', String(Boolean(formData.contains_honey)))
+  payload.append('contains_ave', String(Boolean(formData.contains_ave)))
+  payload.append('contains_camarao', String(Boolean(formData.contains_camarao)))
 
   if (formData.coverFile) {
     payload.append('cover', formData.coverFile)
@@ -229,12 +238,14 @@ export async function updateRecipe(id: string, formData: RecipeFormData): Promis
 
   payload.append('tips', formData.tips || '')
 
-  // Dietary restriction flags (migration 0006).
+  // Dietary restriction flags (migration 0006 + 0009).
   payload.append('contains_gluten', String(Boolean(formData.contains_gluten)))
   payload.append('contains_dairy', String(Boolean(formData.contains_dairy)))
   payload.append('contains_eggs', String(Boolean(formData.contains_eggs)))
   payload.append('contains_fish', String(Boolean(formData.contains_fish)))
   payload.append('contains_honey', String(Boolean(formData.contains_honey)))
+  payload.append('contains_ave', String(Boolean(formData.contains_ave)))
+  payload.append('contains_camarao', String(Boolean(formData.contains_camarao)))
 
   if (formData.coverFile) {
     payload.append('cover', formData.coverFile)

@@ -1,6 +1,19 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Printer, Loader2, Tag, Leaf, Wheat, MilkOff, Egg, Fish, Droplet, X } from 'lucide-react'
+import {
+  Printer,
+  Loader2,
+  Tag,
+  Leaf,
+  Wheat,
+  MilkOff,
+  Egg,
+  Fish,
+  Droplet,
+  Bird,
+  Shrimp,
+  X,
+} from 'lucide-react'
 import { Collection, Recipe } from '@/types'
 import {
   Dialog,
@@ -25,10 +38,12 @@ const ANIMAL_FLAG_META: {
   label: string
   Icon: React.ComponentType<{ className?: string }>
 }[] = [
-  { key: 'contains_dairy', label: 'Laticínios', Icon: MilkOff },
+  { key: 'contains_dairy', label: 'Laticínio', Icon: MilkOff },
   { key: 'contains_eggs', label: 'Ovos', Icon: Egg },
   { key: 'contains_fish', label: 'Peixe', Icon: Fish },
   { key: 'contains_honey', label: 'Mel', Icon: Droplet },
+  { key: 'contains_ave', label: 'Ave', Icon: Bird },
+  { key: 'contains_camarao', label: 'Camarão', Icon: Shrimp },
 ]
 
 /**
@@ -44,11 +59,13 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     contains_eggs: recipe.contains_eggs,
     contains_fish: recipe.contains_fish,
     contains_honey: recipe.contains_honey,
+    contains_ave: recipe.contains_ave,
+    contains_camarao: recipe.contains_camarao,
   }
   const vegan = isVegan(state)
   const hasGluten = Boolean(state.contains_gluten)
 
-  // Active animal-origin flags (Laticínios, Ovos, Peixe, Mel)
+  // Active animal-origin flags (Laticínio, Ovos, Peixe, Mel, Ave, Camarão)
   const activeAnimal = ANIMAL_FLAG_META.filter((m) => state[m.key])
 
   return (

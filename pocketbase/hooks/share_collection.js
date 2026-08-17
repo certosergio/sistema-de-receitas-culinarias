@@ -104,6 +104,8 @@ routerAdd('GET', '/api/share/:token', (e) => {
         contains_eggs: r.get('contains_eggs') || false,
         contains_fish: r.get('contains_fish') || false,
         contains_honey: r.get('contains_honey') || false,
+        contains_ave: r.get('contains_ave') || false,
+        contains_camarao: r.get('contains_camarao') || false,
       })
     } catch (_) {}
   }
