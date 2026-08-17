@@ -79,7 +79,7 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         </div>
 
         {/* Recipe name — featured */}
-        <h3 className="font-serif text-lg font-bold text-tinta dark:text-[#EFE9DD] leading-tight mb-2">
+        <h3 className="font-serif text-xl font-bold text-tinta dark:text-[#EFE9DD] leading-tight mb-2">
           {recipe.title}
         </h3>
 
