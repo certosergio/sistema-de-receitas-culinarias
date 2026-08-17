@@ -5,6 +5,7 @@ import { getCategories } from '@/services/categories'
 import { getTechniques } from '@/services/techniques'
 import { Recipe, Category, Technique } from '@/types'
 import { RecipeCard } from '@/components/RecipeCard'
+import ImportPhotoDialog from '@/components/ImportPhotoDialog'
 import { useRealtime } from '@/hooks/use-realtime'
 import { DIETARY_FACETS } from '@/lib/dietary'
 import {
@@ -21,6 +22,7 @@ import {
   ArrowUpDown,
   Salad,
   Leaf,
+  Camera,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,6 +45,7 @@ const RecipesList: React.FC = () => {
   const [techniques, setTechniques] = useState<Technique[]>([])
   const [loading, setLoading] = useState(true)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [photoImportOpen, setPhotoImportOpen] = useState(false)
 
   // URL query state
   const searchQuery = searchParams.get('q') || ''
@@ -291,6 +294,14 @@ const RecipesList: React.FC = () => {
           >
             <Upload className="w-4 h-4" />
             <span>Importar</span>
+          </Button>
+          <Button
+            onClick={() => setPhotoImportOpen(true)}
+            className="border-bronze/40 text-bronze hover:bg-bronze-subtle shadow-xs font-medium rounded-xl px-4 py-5 gap-2"
+            title="Importar receita por foto (OCR)"
+          >
+            <Camera className="w-4 h-4" />
+            <span className="hidden sm:inline">Importar por Foto</span>
           </Button>
           <Button
             onClick={() => navigate('/receitas/nova')}
@@ -699,6 +710,9 @@ const RecipesList: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Photo (OCR) import modal */}
+      <ImportPhotoDialog open={photoImportOpen} onOpenChange={setPhotoImportOpen} />
     </div>
   )
 }
