@@ -11,7 +11,7 @@ routerAdd(
   'POST',
   '/api/import-recipe',
   (e) => {
-    const body = $apis.requestInfo(e).data || {}
+    const body = e.requestInfo().data || {}
     const rawUrl = typeof body.url === 'string' ? body.url.trim() : ''
     if (!rawUrl) {
       return e.json(400, { error: 'Informe a URL da receita.' })
@@ -145,5 +145,12 @@ routerAdd(
       text,
     })
   },
-  $apis.requireAuth(),
+  (e) => {
+    const info = e.requestInfo()
+    const authRecord = info.authRecord
+    if (!authRecord) {
+      return e.json(401, { error: 'Autenticação necessária.' })
+    }
+    return undefined
+  },
 )
