@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import QRCode from 'qrcode'
 import { Printer, Loader2, Tag, Leaf, Wheat, MilkOff, Egg, Fish, Droplet, X } from 'lucide-react'
 import { Collection, Recipe } from '@/types'
 import {
@@ -13,13 +12,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { getCollectionRecipes } from '@/services/collections'
 import { isVegan, type DietaryState, type DietaryFlagKey } from '@/lib/dietary'
-import { RecipeQrCode } from '@/components/RecipeQrCode'
-
-/** Production base URL for the ficha técnica of a recipe. */
-const PRODUCTION_BASE_URL = 'https://sistema-de-receitas-culinarias-ea104.goskip.app'
-
-/** Builds the public ficha técnica URL for a given recipe id. */
-const recipeUrl = (recipeId: string) => `${PRODUCTION_BASE_URL}/receitas/${recipeId}`
 
 interface EtiquetasDialogProps {
   open: boolean
@@ -65,18 +57,14 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 
       <div className="flex flex-col flex-1 px-5 py-4">
         {/* Discreet recipe code (db id) */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="label-caps text-[9px] text-bronze dark:text-[#D4A86A] flex items-center gap-1">
-            <Tag className="w-2.5 h-2.5" />
-            Receita
-          </span>
+        <div className="flex items-center justify-end mb-2">
           <span className="font-mono text-[9px] text-tinta-ter dark:text-[#8F887B] tracking-wide select-all">
             #{recipe.id.slice(-8).toUpperCase()}
           </span>
         </div>
 
         {/* Recipe name — featured */}
-        <h3 className="font-serif text-xl font-bold text-tinta dark:text-[#EFE9DD] leading-tight mb-1.5">
+        <h3 className="font-serif text-2xl font-bold text-tinta dark:text-[#EFE9DD] leading-tight mb-2">
           {recipe.title}
         </h3>
 
@@ -124,16 +112,6 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             </div>
           )}
         </footer>
-
-        {/* QR code — ficha técnica online (discreet, bottom-right) */}
-        <div className="mt-3 flex justify-end">
-          <div className="flex flex-col items-center gap-0.5">
-            <RecipeQrCode url={recipeUrl(recipe.id)} size={64} />
-            <span className="text-[8px] text-tinta-ter dark:text-[#8F887B] leading-none">
-              Ficha técnica online
-            </span>
-          </div>
-        </div>
       </div>
     </article>
   )
