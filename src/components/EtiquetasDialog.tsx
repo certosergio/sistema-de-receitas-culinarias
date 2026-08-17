@@ -34,7 +34,8 @@ const ANIMAL_FLAG_META: {
 /**
  * A single identification etiqueta. Elegant and sober, matching the verde /
  * bronze / marfim palette and serifed typography. Designed to be readable on
- * screen and to print cleanly.
+ * screen and to print cleanly. Corners are kept clean and square — no rounded
+ * edges or ornamental vertex decorations.
  */
 const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const state: DietaryState = {
@@ -51,10 +52,7 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const activeAnimal = ANIMAL_FLAG_META.filter((m) => state[m.key])
 
   return (
-    <article className="etiqueta print-avoid-break flex flex-col bg-white dark:bg-[#1E1C16] border border-marfim-border dark:border-[#322F26] rounded-lg overflow-hidden shadow-sm">
-      {/* Top accent bar */}
-      <div className="h-1.5 bg-verde dark:bg-[#24392C]" />
-
+    <article className="etiqueta print-avoid-break flex flex-col bg-white dark:bg-[#1E1C16] border border-marfim-border dark:border-[#322F26] rounded-none shadow-sm">
       <div className="flex flex-col flex-1 px-5 py-4">
         {/* Discreet recipe code (db id) */}
         <div className="flex items-center justify-end mb-2">
@@ -120,26 +118,12 @@ const Etiqueta: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 /**
  * Print-only sheet of all etiquetas, portaled into #print-root so the
  * @media print CSS reveals just it. Renders a 3-column grid of etiquetas.
+ * Only the grid of etiquetas is rendered — no header, title or instructions —
+ * so the printed page contains nothing but the etiquetas.
  */
-const EtiquetasPrintSheet: React.FC<{ collection: Collection; recipes: Recipe[] }> = ({
-  collection,
-  recipes,
-}) => {
+const EtiquetasPrintSheet: React.FC<{ recipes: Recipe[] }> = ({ recipes }) => {
   return createPortal(
-    <div className="font-sans text-tinta bg-white">
-      <header className="pb-2 mb-3 border-b-2 border-bronze/40">
-        <span className="uppercase tracking-[0.18em] text-[9px] font-semibold text-bronze">
-          Biblioteca Culinária — Etiquetas de Identificação
-        </span>
-        <h1 className="font-serif text-2xl font-bold text-tinta leading-tight mt-1">
-          {collection.name}
-        </h1>
-        <p className="text-[10px] text-tinta-ter mt-0.5">
-          {recipes.length} {recipes.length === 1 ? 'etiqueta' : 'etiquetas'} ·{' '}
-          {new Date().toLocaleDateString('pt-BR')}
-        </p>
-      </header>
-
+    <div className="etiquetas-print-wrapper font-sans text-tinta bg-white">
       <div className="etiquetas-print-grid grid grid-cols-3 gap-4">
         {recipes.map((recipe) => (
           <Etiqueta key={recipe.id} recipe={recipe} />
@@ -264,9 +248,7 @@ export const EtiquetasDialog: React.FC<EtiquetasDialogProps> = ({
       </Dialog>
 
       {/* Print-only sheet (revealed by @media print) */}
-      {printing && collection && recipes.length > 0 && (
-        <EtiquetasPrintSheet collection={collection} recipes={recipes} />
-      )}
+      {printing && collection && recipes.length > 0 && <EtiquetasPrintSheet recipes={recipes} />}
     </>
   )
 }

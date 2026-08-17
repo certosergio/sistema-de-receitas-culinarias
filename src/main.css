@@ -661,6 +661,19 @@ html.dark ::selection {
     page-break-inside: avoid !important;
     box-shadow: none !important;
     border: 1px solid #d8d2c6 !important;
+    border-radius: 0 !important;
+  }
+  /* Keep corners clean and square: neutralize any rounded elements inside
+     the etiquetas print sheet (badges, indicators, accent bars). */
+  #print-root .etiquetas-print-wrapper *,
+  #print-root .etiqueta * {
+    border-radius: 0 !important;
+  }
+  /* The print sheet wrapper carries no padding/margin so the grid starts at
+     the top of the page area. */
+  #print-root .etiquetas-print-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
   }
   /* Reveal the full summary in print (no clamping). */
   #print-root .etiqueta p {
