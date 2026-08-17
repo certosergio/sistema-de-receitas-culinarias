@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { createRecipe } from '@/services/recipes'
 import { getCategories } from '@/services/categories'
@@ -11,6 +11,12 @@ import {
   parseIngredientLine,
   type ParsedRecipe,
 } from '@/lib/recipeImport'
+import {
+  ocrImageToRecipe,
+  validateImageFile,
+  readImageDimensions,
+  type OcrProgress,
+} from '@/lib/recipeOcr'
 import {
   ArrowLeft,
   Upload,
@@ -28,6 +34,11 @@ import {
   Wand2,
   ClipboardPaste,
   ExternalLink,
+  Camera,
+  ImageUp,
+  ScanText,
+  RotateCcw,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,7 +54,10 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 
-type Mode = 'url' | 'text'
+type Mode = 'url' | 'text' | 'photo'
+
+const LOW_RES_THRESHOLD = 600
+const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp,image/jpg'
 
 const EMPTY_PARSED: ParsedRecipe = {
   title: '',
@@ -79,6 +93,33 @@ const ImportarReceita: React.FC = () => {
 
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // --- Photo/OCR mode state ---
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [lowResWarning, setLowResWarning] = useState<string | null>(null)
+  const [ocrRunning, setOcrRunning] = useState(false)
+  const [ocrProgress, setOcrProgress] = useState<OcrProgress | null>(null)
+  const [ocrError, setOcrError] = useState<string | null>(null)
+  const [showManualFallback, setShowManualFallback] = useState(false)
+
+  // Camera state
+  const [cameraActive, setCameraActive] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const photoFileInputRef = useRef<HTMLInputElement>(null)
+  // Tracks the current object URL so the unmount cleanup can revoke it.
+  const previewUrlRef = useRef<string | null>(null)
+
+  // Revoke object URLs and stop the camera on unmount.
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop())
+    }
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -167,6 +208,180 @@ const ImportarReceita: React.FC = () => {
     setParseError(null)
     setSourceLabel('')
     setErrors({})
+  }
+
+  // --- Photo mode: image + OCR handling ---
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop())
+      streamRef.current = null
+    }
+    setCameraActive(false)
+  }, [])
+
+  const clearImage = useCallback(() => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    previewUrlRef.current = null
+    setImagePreview(null)
+    setImageFile(null)
+    setLowResWarning(null)
+    setOcrError(null)
+    setShowManualFallback(false)
+    if (photoFileInputRef.current) photoFileInputRef.current.value = ''
+  }, [])
+
+  const acceptImage = useCallback(async (file: File) => {
+    setOcrError(null)
+    setShowManualFallback(false)
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      setOcrError(
+        validationError === 'too-small'
+          ? 'A imagem está muito pequena. Envie uma foto maior e mais nítida.'
+          : 'Selecione um arquivo de imagem válido (PNG, JPEG ou WebP).',
+      )
+      return
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    previewUrlRef.current = previewUrl
+    setImagePreview(previewUrl)
+    setImageFile(file)
+
+    // Check resolution and warn (non-blocking).
+    try {
+      const { width, height } = await readImageDimensions(previewUrl)
+      const shorter = Math.min(width, height)
+      if (shorter < LOW_RES_THRESHOLD) {
+        setLowResWarning(
+          'A imagem está com baixa resolução, tente uma foto mais nítida para melhor extração.',
+        )
+      } else {
+        setLowResWarning(null)
+      }
+    } catch {
+      setLowResWarning(null)
+    }
+  }, [])
+
+  const handlePhotoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) acceptImage(file)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) acceptImage(file)
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setDragging(false)
+  }
+
+  const startCamera = async () => {
+    setCameraError(null)
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Seu navegador não suporta acesso à câmera.')
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false,
+      })
+      streamRef.current = stream
+      setCameraActive(true)
+      // Wait for the video element to be rendered before attaching the stream.
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          videoRef.current.play().catch((err) => console.error('Erro ao iniciar vídeo:', err))
+        }
+      })
+    } catch (err: unknown) {
+      console.error('Erro ao acessar câmera:', err)
+      const e = err as { name?: string }
+      if (e?.name === 'NotAllowedError' || e?.name === 'SecurityError') {
+        setCameraError('Permissão de câmera negada. Autorize o acesso no navegador.')
+      } else if (e?.name === 'NotFoundError' || e?.name === 'OverconstrainedError') {
+        setCameraError('Nenhuma câmera encontrada neste dispositivo.')
+      } else {
+        setCameraError('Não foi possível acessar a câmera. Verifique as permissões.')
+      }
+    }
+  }
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return
+    const video = videoRef.current
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return
+        const file = new File([blob], 'captura.jpg', { type: 'image/jpeg' })
+        stopCamera()
+        acceptImage(file)
+      },
+      'image/jpeg',
+      0.92,
+    )
+  }
+
+  const handleExtract = async () => {
+    if (!imageFile) return
+    setOcrRunning(true)
+    setOcrError(null)
+    setShowManualFallback(false)
+    setOcrProgress({ progress: 0, status: 'Iniciando...' })
+    setParsing(true)
+    try {
+      const { text, recipe } = await ocrImageToRecipe(imageFile, (p) => setOcrProgress(p))
+      if (text.trim().length < 4) {
+        throw new Error('Texto insuficiente detectado na imagem. Tente uma foto mais nítida.')
+      }
+      setParsed(recipe)
+      setSourceLabel('Foto (OCR)')
+      toast({
+        title: 'Texto extraído',
+        description: `Foram identificados ${recipe.ingredients.length} ingrediente(s) e ${recipe.method.length} passo(s). Revise antes de salvar.`,
+      })
+    } catch (err: unknown) {
+      console.error('Erro no OCR:', err)
+      const msg =
+        err instanceof Error ? err.message : 'Falha ao extrair texto da imagem. Tente novamente.'
+      setOcrError(msg)
+      setShowManualFallback(true)
+    } finally {
+      setOcrRunning(false)
+      setOcrProgress(null)
+      setParsing(false)
+    }
+  }
+
+  const handleFallbackToText = () => {
+    setMode('text')
+    setOcrError(null)
+    setShowManualFallback(false)
+    clearImage()
+    toast({
+      title: 'Modo texto',
+      description: 'Cole o texto da receita manualmente abaixo.',
+    })
   }
 
   // --- Edit helpers on the parsed result ---
@@ -359,8 +574,8 @@ const ImportarReceita: React.FC = () => {
             Importar Receita
           </h1>
           <p className="text-sm text-tinta-sec mt-0.5">
-            Cole uma URL ou o texto de uma receita e o sistema extrai a ficha técnica
-            automaticamente.
+            Cole uma URL, o texto de uma receita ou tire uma foto que o sistema extrai a ficha
+            técnica automaticamente.
           </p>
         </div>
 
@@ -400,10 +615,10 @@ const ImportarReceita: React.FC = () => {
       {!hasParsed && (
         <section className="bg-white rounded-2xl p-6 sm:p-8 border border-marfim-border shadow-card space-y-6">
           {/* Mode tabs */}
-          <div className="inline-flex p-1 bg-marfim-card rounded-xl border border-marfim-border">
+          <div className="inline-flex p-1 bg-marfim-card rounded-xl border border-marfim-border flex-wrap">
             <button
               onClick={() => setMode('url')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 mode === 'url' ? 'bg-white text-verde shadow-xs' : 'text-tinta-sec hover:text-tinta'
               }`}
             >
@@ -412,7 +627,7 @@ const ImportarReceita: React.FC = () => {
             </button>
             <button
               onClick={() => setMode('text')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 mode === 'text'
                   ? 'bg-white text-verde shadow-xs'
                   : 'text-tinta-sec hover:text-tinta'
@@ -420,6 +635,17 @@ const ImportarReceita: React.FC = () => {
             >
               <FileText className="w-4 h-4" />
               Texto da receita
+            </button>
+            <button
+              onClick={() => setMode('photo')}
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                mode === 'photo'
+                  ? 'bg-white text-verde shadow-xs'
+                  : 'text-tinta-sec hover:text-tinta'
+              }`}
+            >
+              <Camera className="w-4 h-4" />
+              Foto
             </button>
           </div>
 
@@ -469,7 +695,7 @@ const ImportarReceita: React.FC = () => {
                 evitar bloqueios de CORS.
               </p>
             </div>
-          ) : (
+          ) : mode === 'text' ? (
             <div className="space-y-4">
               <div>
                 <Label htmlFor="rawText" className="label-caps block mb-1.5">
@@ -508,6 +734,216 @@ const ImportarReceita: React.FC = () => {
                 </Button>
               </div>
             </div>
+          ) : (
+            <div className="space-y-4">
+              <input
+                ref={photoFileInputRef}
+                type="file"
+                accept={ACCEPTED_IMAGE_TYPES}
+                onChange={handlePhotoFileSelect}
+                className="hidden"
+              />
+
+              {/* Capture options */}
+              {!imagePreview && !cameraActive && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="flex items-center justify-center gap-2.5 px-4 py-4 rounded-xl border-2 border-marfim-border dark:border-[#322F26] bg-marfim/30 dark:bg-[#221F18]/60 text-tinta dark:text-[#EFE9DD] hover:border-verde hover:bg-verde-subtle/40 font-medium text-sm transition-all"
+                  >
+                    <Camera className="w-5 h-5" />
+                    <span>Usar Câmera</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => photoFileInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2.5 px-4 py-4 rounded-xl border-2 border-marfim-border dark:border-[#322F26] bg-marfim/30 dark:bg-[#221F18]/60 text-tinta dark:text-[#EFE9DD] hover:border-bronze hover:bg-bronze-subtle/40 font-medium text-sm transition-all"
+                  >
+                    <Upload className="w-5 h-5" />
+                    <span>Enviar Imagem</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Drop zone (when no image, no camera) */}
+              {!imagePreview && !cameraActive && (
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => photoFileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-8 sm:p-10 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3 ${
+                    dragging
+                      ? 'border-verde bg-verde-subtle/40 scale-[1.01]'
+                      : 'border-marfim-border dark:border-[#322F26] bg-marfim/30 dark:bg-[#221F18]/40 hover:border-bronze hover:bg-bronze-subtle/30'
+                  }`}
+                >
+                  <div className="w-14 h-14 rounded-full bg-white dark:bg-[#221F18] shadow-xs flex items-center justify-center text-bronze border border-marfim-border dark:border-[#322F26]">
+                    <ImageUp className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-tinta dark:text-[#EFE9DD]">
+                      Arraste uma imagem aqui ou clique para selecionar
+                    </p>
+                    <p className="text-xs text-tinta-ter dark:text-[#8F887B] mt-1">
+                      PNG, JPEG ou WebP — fotos de livros, cardápios ou receitas impressas
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Camera preview */}
+              {cameraActive && (
+                <div className="space-y-3">
+                  <div className="relative rounded-xl overflow-hidden border-2 border-verde/40 bg-black aspect-[4/3]">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                      title="Fechar câmera"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={capturePhoto}
+                    className="w-full bg-verde hover:bg-verde-hover text-white rounded-xl h-11"
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Capturar Foto
+                  </Button>
+                  {cameraError && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-800 dark:text-red-300 text-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <p>{cameraError}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Image preview before extraction */}
+              {imagePreview && !cameraActive && (
+                <div className="space-y-3">
+                  <div className="relative rounded-xl overflow-hidden border border-bronze/30 dark:border-bronze/30 bg-marfim-card dark:bg-[#221F18]">
+                    <img
+                      src={imagePreview}
+                      alt="Prévia da foto"
+                      className="w-full max-h-[42vh] object-contain bg-black/5"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearImage()
+                      }}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                      title="Recomeçar"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {lowResWarning && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <p>{lowResWarning}</p>
+                    </div>
+                  )}
+                  {ocrError && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-800 dark:text-red-300 text-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p>{ocrError}</p>
+                        {showManualFallback && (
+                          <button
+                            type="button"
+                            onClick={handleFallbackToText}
+                            className="mt-1.5 inline-flex items-center gap-1 text-verde dark:text-[#A9C4B5] font-semibold hover:underline"
+                          >
+                            <ClipboardPaste className="w-3.5 h-3.5" />
+                            Colar o texto manualmente
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        clearImage()
+                      }}
+                      disabled={ocrRunning}
+                      className="h-11 border-marfim-border dark:border-[#322F26] text-tinta dark:text-[#EFE9DD] rounded-xl"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Recomeçar
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleExtract}
+                      disabled={ocrRunning}
+                      className="h-11 flex-1 bg-verde hover:bg-verde-hover text-white rounded-xl shadow-md"
+                    >
+                      {ocrRunning ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Lendo imagem...
+                        </>
+                      ) : (
+                        <>
+                          <ScanText className="w-4 h-4 mr-2" />
+                          Ler Receita
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* OCR progress */}
+              {ocrRunning && ocrProgress && (
+                <div className="space-y-3 p-4 rounded-xl bg-verde-subtle/60 dark:bg-[#1E3326]/60 border border-verde/20">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-verde shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-verde">
+                        {ocrProgress.status || 'Reconhecendo texto...'}
+                      </p>
+                      <p className="text-xs text-verde/80 mt-0.5">
+                        Lendo a foto com OCR — isso pode levar alguns segundos.
+                      </p>
+                    </div>
+                    <span className="text-sm font-mono font-bold text-verde shrink-0">
+                      {Math.round((ocrProgress.progress || 0) * 100)}%
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-verde/20 overflow-hidden">
+                    <div
+                      className="h-full bg-verde transition-all duration-300 ease-out rounded-full"
+                      style={{
+                        width: `${Math.max(Math.round((ocrProgress.progress || 0) * 100), 3)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-tinta-ter leading-relaxed">
+                O reconhecimento de texto (OCR) roda no seu navegador via Tesseract.js, em
+                português, com fallback para inglês. Use fotos bem iluminadas e nítidas de receitas
+                impressas.
+              </p>
+            </div>
           )}
 
           {parseError && (
@@ -527,9 +963,9 @@ const ImportarReceita: React.FC = () => {
                 <Upload className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-tinta">1. Cole o conteúdo</p>
+                <p className="text-sm font-semibold text-tinta">1. Forneça o conteúdo</p>
                 <p className="text-xs text-tinta-sec mt-0.5">
-                  URL da receita ou o texto bruto copiado do site.
+                  URL da receita, o texto bruto ou uma foto da receita impressa.
                 </p>
               </div>
             </div>
@@ -559,11 +995,11 @@ const ImportarReceita: React.FC = () => {
         </section>
       )}
 
-      {/* PARSING LOADING STATE */}
-      {parsing && !hasParsed && (
-        <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-marfim-border shadow-card">
+      {/* PARSING LOADING STATE (URL / Text modes — photo mode shows its own progress bar) */}
+      {parsing && !hasParsed && mode !== 'photo' && (
+        <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-[#1E1C16] rounded-2xl border border-marfim-border dark:border-[#322F26] shadow-card">
           <Loader2 className="w-9 h-9 animate-spin text-verde mb-3" />
-          <p className="font-serif italic text-tinta-sec">
+          <p className="font-serif italic text-tinta-sec dark:text-[#B5AE9F]">
             {mode === 'url' ? 'Buscando e analisando a página...' : 'Estruturando a receita...'}
           </p>
         </div>
