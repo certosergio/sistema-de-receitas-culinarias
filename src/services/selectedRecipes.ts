@@ -7,13 +7,45 @@ function isDuplicateError(err: unknown): boolean {
   const msg = (err.message || '').toLowerCase()
   const responseMsg = (err.response?.message || '').toLowerCase()
   const text = `${msg} ${responseMsg}`
-  return (
+
+  if (
     text.includes('unique') ||
     text.includes('duplicate') ||
     text.includes('constraint') ||
     text.includes('already') ||
     text.includes('já existe')
-  )
+  ) {
+    return true
+  }
+
+  // PocketBase returns unique-constraint failures as a validation error nested
+  // in `err.response.data`, shaped like:
+  //   { data: { user: { code: 'validation_not_unique', message: '...' } } } }
+  // The existing check above only looked at `err.message` / `err.response.message`,
+  // so these were missed and surfaced as a generic failure.
+  const data = err.response?.data
+  if (data && typeof data === 'object') {
+    for (const detail of Object.values(data as Record<string, unknown>)) {
+      if (!detail || typeof detail !== 'object') continue
+      const code = (detail as { code?: unknown }).code
+      const message = (detail as { message?: unknown }).message
+      if (code === 'validation_not_unique') return true
+      if (typeof message === 'string') {
+        const m = message.toLowerCase()
+        if (m.includes('unique') || m.includes('already') || m.includes('já existe')) {
+          return true
+        }
+      }
+    }
+  }
+
+  return false
+}
+
+/** Returns true for PocketBase authentication/authorization failures (401/403). */
+export function isAuthError(err: unknown): boolean {
+  if (!(err instanceof ClientResponseError)) return false
+  return err.status === 401 || err.status === 403
 }
 
 function isNotFoundError(err: unknown): boolean {

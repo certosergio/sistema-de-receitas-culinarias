@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Trash2, FileDown, ListChecks, Loader2, ArrowRight, BookOpen } from 'lucide-react'
+import { Trash2, FileDown, ListChecks, Loader2, BookOpen, Plus } from 'lucide-react'
 import {
   fetchSelectedRecipes,
   clearSelectedRecipes,
@@ -10,7 +10,9 @@ import { useSelection } from '@/contexts/SelectionContext'
 import { Recipe } from '@/types'
 import { useRealtime } from '@/hooks/use-realtime'
 import { exportSelectionReportPdf } from '@/lib/selectionReportPdf'
+import { formatBRL, recipeCost, shortId, yieldLabel } from '@/lib/recipeUtils'
 import { Button } from '@/components/ui/button'
+import RecipeIndexDialog from '@/components/RecipeIndexDialog'
 import { toast } from '@/hooks/use-toast'
 import {
   AlertDialog,
@@ -23,29 +25,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-const formatBRL = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
-
-function recipeCost(recipe: Recipe): number {
-  const ingredientsTotalCost = Array.isArray(recipe.ingredients)
-    ? recipe.ingredients.reduce((sum, ing) => {
-        const c = typeof ing.cost === 'number' ? ing.cost : 0
-        return sum + (isNaN(c) ? 0 : c)
-      }, 0)
-    : 0
-  return ingredientsTotalCost > 0 ? ingredientsTotalCost : recipe.cost || 0
-}
-
-function shortId(id: string): string {
-  return id.length > 8 ? id.slice(-8) : id
-}
-
-function yieldLabel(recipe: Recipe): string {
-  if (recipe.yield_quantity) {
-    return `${recipe.yield_quantity} ${recipe.yield_unit || 'porções'}`
-  }
-  return recipe.portions || '—'
-}
-
 const Selecionadas: React.FC = () => {
   const { refresh } = useSelection()
   const [recipes, setRecipes] = useState<Recipe[]>([])
@@ -54,6 +33,7 @@ const Selecionadas: React.FC = () => {
   const [clearOpen, setClearOpen] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [indexOpen, setIndexOpen] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -167,6 +147,13 @@ const Selecionadas: React.FC = () => {
         {recipes.length > 0 && (
           <div className="flex items-center gap-2.5">
             <Button
+              onClick={() => setIndexOpen(true)}
+              className="bg-verde hover:bg-verde-hover text-white dark:bg-[#24392C] dark:hover:bg-[#2E4A3A] dark:text-[#EFE9DD] rounded-xl gap-2 h-10 text-xs font-semibold shadow-md"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Adicionar receitas</span>
+            </Button>
+            <Button
               variant="outline"
               onClick={() => setClearOpen(true)}
               disabled={removing || exporting}
@@ -209,12 +196,12 @@ const Selecionadas: React.FC = () => {
           <p className="text-sm text-tinta-sec dark:text-[#B5AE9F] max-w-md mx-auto mt-2 mb-6 leading-relaxed">
             Nenhuma receita selecionada. Adicione receitas a partir do catálogo.
           </p>
-          <Button asChild className="bg-verde hover:bg-verde-hover text-white rounded-xl">
-            <Link to="/receitas">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Explorar receitas
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
+          <Button
+            onClick={() => setIndexOpen(true)}
+            className="bg-verde hover:bg-verde-hover text-white rounded-xl"
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Explorar receitas
           </Button>
         </div>
       ) : (
@@ -385,6 +372,9 @@ const Selecionadas: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* RECIPE INDEX DIALOG */}
+      <RecipeIndexDialog open={indexOpen} onOpenChange={setIndexOpen} onAdded={load} />
     </div>
   )
 }
