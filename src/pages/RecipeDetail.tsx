@@ -312,108 +312,91 @@ const RecipeDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* FICHA TÉCNICA (THE MASTER CARD) */}
-      <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border-2 border-bronze/40 shadow-card space-y-8 relative overflow-hidden">
-        {/* Subtle decorative gold badge in corner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-marfim-border pb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-bronze/15 text-bronze flex items-center justify-center border border-bronze/30">
-              <Award className="w-5 h-5 text-bronze" />
-            </div>
-            <div>
-              <span className="label-caps block text-[10px]">Especificação Gastronômica</span>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-tinta">
-                Ficha Técnica
-              </h2>
-            </div>
-          </div>
-          <span className="text-xs font-serif italic text-tinta-sec">
-            Padrão de acervo profissional
-          </span>
+      {/* FICHA TÉCNICA (informações complementares, com hierarquia visual reduzida) */}
+      <section className="bg-white rounded-2xl p-4 sm:p-5 border border-marfim-border shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Award className="w-4 h-4 text-tinta-ter" />
+          <span className="label-caps text-[10px] text-tinta-ter">Ficha Técnica</span>
         </div>
 
-        {/* Technical Data Grid (2 cols mobile, 4 cols desktop) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        {/* Technical Data Grid — compacto e discreto (2 cols mobile, 4 cols desktop) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3">
           {/* Rendimento */}
-          <div className="p-4 rounded-2xl bg-marfim border border-marfim-border space-y-1">
-            <div className="flex items-center gap-1.5 text-tinta-ter">
-              <Users className="w-4 h-4 text-bronze" />
-              <span className="label-caps text-[10px]">Rendimento</span>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-tinta-ter/80">
+              <Users className="w-3 h-3 text-tinta-ter/80" />
+              <span className="text-[9px] uppercase tracking-wider">Rendimento</span>
             </div>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-tinta">
-              {recipe.yield_quantity || '-'}{' '}
-              <span className="text-base font-sans font-normal text-tinta-sec">
-                {recipe.yield_unit || ''}
-              </span>
+            <div className="text-xs font-medium text-tinta-sec">
+              {recipe.yield_quantity || '-'}
+              {recipe.yield_unit ? (
+                <span className="ml-1 text-tinta-ter">{recipe.yield_unit}</span>
+              ) : null}
             </div>
           </div>
 
-          {/* Porção */}
-          <div className="p-4 rounded-2xl bg-marfim border border-marfim-border space-y-1">
-            <div className="flex items-center gap-1.5 text-tinta-ter">
-              <Scale className="w-4 h-4 text-bronze" />
-              <span className="label-caps text-[10px]">Porção Unitária</span>
+          {/* Porção Unitária */}
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-tinta-ter/80">
+              <Scale className="w-3 h-3 text-tinta-ter/80" />
+              <span className="text-[9px] uppercase tracking-wider">Porção Unitária</span>
             </div>
-            <div className="font-serif text-xl sm:text-2xl font-bold text-tinta line-clamp-1">
+            <div className="text-xs font-medium text-tinta-sec line-clamp-1">
               {recipe.portions || 'Não especificada'}
             </div>
           </div>
 
           {/* Tempo de Preparo */}
-          <div className="p-4 rounded-2xl bg-marfim border border-marfim-border space-y-1">
-            <div className="flex items-center gap-1.5 text-tinta-ter">
-              <Clock className="w-4 h-4 text-verde" />
-              <span className="label-caps text-[10px]">Preparo</span>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-tinta-ter/80">
+              <Clock className="w-3 h-3 text-tinta-ter/80" />
+              <span className="text-[9px] uppercase tracking-wider">Preparo</span>
             </div>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-tinta">
+            <div className="text-xs font-medium text-tinta-sec">
               {recipe.prep_minutes !== undefined ? `${recipe.prep_minutes} min` : '-'}
             </div>
           </div>
 
           {/* Tempo de Cozimento */}
-          <div className="p-4 rounded-2xl bg-marfim border border-marfim-border space-y-1">
-            <div className="flex items-center gap-1.5 text-tinta-ter">
-              <Flame className="w-4 h-4 text-amber-600" />
-              <span className="label-caps text-[10px]">Cozimento</span>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-tinta-ter/80">
+              <Flame className="w-3 h-3 text-tinta-ter/80" />
+              <span className="text-[9px] uppercase tracking-wider">Cozimento</span>
             </div>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-tinta">
+            <div className="text-xs font-medium text-tinta-sec">
               {recipe.cook_minutes !== undefined ? `${recipe.cook_minutes} min` : '-'}
             </div>
           </div>
 
-          {/* Tempo Total em Destaque */}
-          <div className="p-4 rounded-2xl bg-verde text-white border border-verde-light space-y-1 col-span-2 sm:col-span-1 shadow-md">
-            <div className="flex items-center gap-1.5 text-marfim/80">
-              <Zap className="w-4 h-4 text-bronze-light" />
-              <span className="text-[10px] uppercase font-bold tracking-wider text-bronze-light">
-                Tempo Total
-              </span>
+          {/* Tempo Total */}
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-tinta-ter/80">
+              <Zap className="w-3 h-3 text-tinta-ter/80" />
+              <span className="text-[9px] uppercase tracking-wider">Tempo Total</span>
             </div>
-            <div className="font-serif text-3xl font-bold text-white">{totalTime} min</div>
+            <div className="text-xs font-medium text-tinta-sec">{totalTime} min</div>
           </div>
 
           {/* Dificuldade */}
-          <div className="p-4 rounded-2xl bg-marfim border border-marfim-border space-y-1 col-span-2 sm:col-span-1">
-            <div className="flex items-center gap-1.5 text-tinta-ter">
-              <ChefHat className="w-4 h-4 text-bronze" />
-              <span className="label-caps text-[10px]">Dificuldade</span>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-tinta-ter/80">
+              <ChefHat className="w-3 h-3 text-tinta-ter/80" />
+              <span className="text-[9px] uppercase tracking-wider">Dificuldade</span>
             </div>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-tinta">
-              {recipe.difficulty || 'Média'}
-            </div>
+            <div className="text-xs font-medium text-tinta-sec">{recipe.difficulty || 'Média'}</div>
           </div>
 
           {/* Custo Estimado (soma dos ingredientes) */}
-          <div className="p-4 rounded-2xl bg-marfim border border-marfim-border space-y-1 col-span-2 sm:col-span-2">
-            <div className="flex items-center gap-1.5 text-tinta-ter">
-              <DollarSign className="w-4 h-4 text-emerald-700" />
-              <span className="label-caps text-[10px]">Custo Estimado</span>
+          <div className="space-y-0.5 col-span-2 md:col-span-1">
+            <div className="flex items-center gap-1.5 text-tinta-ter/80">
+              <DollarSign className="w-3 h-3 text-tinta-ter/80" />
+              <span className="text-[9px] uppercase tracking-wider">Custo Estimado</span>
             </div>
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-tinta">
+            <div className="text-xs font-medium text-tinta-sec">
               {displayCost > 0 ? formatBRL(displayCost) : 'Não calculado'}
             </div>
             {ingredientsTotalCost > 0 && (
-              <span className="text-[11px] text-tinta-ter">
+              <span className="text-[10px] text-tinta-ter/80">
                 Soma do custo individual dos ingredientes
               </span>
             )}
