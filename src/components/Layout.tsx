@@ -10,7 +10,6 @@ import {
   Flame,
   Heart,
   Bookmark,
-  CalendarDays,
   Upload,
   Plus,
   LogOut,
@@ -74,7 +73,6 @@ const Layout: React.FC = () => {
     { label: 'Importar', to: '/importar', icon: Upload },
     { label: 'Categorias', to: '/categorias', icon: FolderTree },
     { label: 'Técnicas de Preparo', to: '/tecnicas', icon: Flame },
-    { label: 'Planejador', to: '/planejador', icon: CalendarDays },
     { label: 'Favoritos', to: '/favoritos', icon: Heart },
     { label: 'Coleções', to: '/colecoes', icon: Bookmark },
   ]

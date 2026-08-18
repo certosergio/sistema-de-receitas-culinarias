@@ -37,6 +37,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { DietaryChips } from '@/components/DietaryBadges'
+import { emptyDietary, type DietaryFlagKey, type DietaryState } from '@/lib/dietary'
 import { toast } from '@/hooks/use-toast'
 
 const ImportarReceita: React.FC = () => {
@@ -56,6 +58,13 @@ const ImportarReceita: React.FC = () => {
 
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Dietary restriction flags (marked manually, not derived from the import).
+  const [dietary, setDietary] = useState<Required<DietaryState>>(emptyDietary())
+
+  const handleDietaryChange = (key: DietaryFlagKey, value: boolean) => {
+    setDietary((prev) => ({ ...prev, [key]: value }))
+  }
 
   useEffect(() => {
     async function load() {
@@ -254,6 +263,13 @@ const ImportarReceita: React.FC = () => {
       ingredients: parsed.ingredients,
       method: parsed.method,
       tips: parsed.tips,
+      contains_gluten: dietary.contains_gluten,
+      contains_dairy: dietary.contains_dairy,
+      contains_eggs: dietary.contains_eggs,
+      contains_fish: dietary.contains_fish,
+      contains_honey: dietary.contains_honey,
+      contains_ave: dietary.contains_ave,
+      contains_camarao: dietary.contains_camarao,
       coverFile: null,
       removeCover: false,
     }
@@ -499,6 +515,11 @@ const ImportarReceita: React.FC = () => {
                   placeholder="Breve descrição do prato..."
                   className="bg-marfim/30 focus:bg-white rounded-xl focus-visible:ring-verde text-sm leading-relaxed"
                 />
+              </div>
+
+              <div>
+                <Label className="label-caps block mb-1.5">Restrições Alimentares</Label>
+                <DietaryChips state={dietary} onChange={handleDietaryChange} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
