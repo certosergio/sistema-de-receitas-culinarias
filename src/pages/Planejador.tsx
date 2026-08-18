@@ -891,164 +891,160 @@ const Planejador: React.FC = () => {
         </div>
       ) : (
         <div className="flex flex-col xl:flex-row gap-5">
-          {/* WEEK GRID (desktop: 7 columns; mobile: accordion) / EMPTY STATE */}
+          {/* WEEK GRID (desktop: 7 columns; mobile: accordion) */}
           <div className="flex-1 min-w-0">
-            {!hasMeals ? (
-              <EMPTY_STATE />
-            ) : (
-              <>
-                {/* DESKTOP GRID (≥ xl) */}
-                <div className="hidden xl:grid grid-cols-7 gap-3">
-                  {days.map((day, idx) => (
-                    <DayColumn
-                      key={toISODate(day)}
-                      day={day}
-                      weekdayFull={WEEKDAYS_FULL[idx]}
-                      weekdayShort={WEEKDAYS_SHORT[idx]}
-                      isToday={isSameDay(day, today)}
-                      planMap={planMap}
-                      dragOverKey={dragOverKey}
-                      pendingRecipe={pendingRecipe}
-                      busy={busy}
-                      noteText={notes[toISODate(day)] ?? ''}
-                      onNoteChange={handleNoteChange}
-                      onNoteBlur={handleNoteBlur}
-                      onOpenPicker={openPicker}
-                      onApplyPending={applyPending}
-                      onRemove={handleRemove}
-                      onSlotDragStart={handleSlotDragStart}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                      onDragEnd={() => {
-                        setDragSlotKey(null)
-                        setDragRecipeId(null)
-                        setDragOverKey(null)
-                      }}
-                      onRecipeClick={(id) => navigate(`/receitas/${id}`)}
-                    />
-                  ))}
-                </div>
+            <>
+              {/* DESKTOP GRID (≥ xl) */}
+              <div className="hidden xl:grid grid-cols-7 gap-3">
+                {days.map((day, idx) => (
+                  <DayColumn
+                    key={toISODate(day)}
+                    day={day}
+                    weekdayFull={WEEKDAYS_FULL[idx]}
+                    weekdayShort={WEEKDAYS_SHORT[idx]}
+                    isToday={isSameDay(day, today)}
+                    planMap={planMap}
+                    dragOverKey={dragOverKey}
+                    pendingRecipe={pendingRecipe}
+                    busy={busy}
+                    noteText={notes[toISODate(day)] ?? ''}
+                    onNoteChange={handleNoteChange}
+                    onNoteBlur={handleNoteBlur}
+                    onOpenPicker={openPicker}
+                    onApplyPending={applyPending}
+                    onRemove={handleRemove}
+                    onSlotDragStart={handleSlotDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={() => {
+                      setDragSlotKey(null)
+                      setDragRecipeId(null)
+                      setDragOverKey(null)
+                    }}
+                    onRecipeClick={(id) => navigate(`/receitas/${id}`)}
+                  />
+                ))}
+              </div>
 
-                {/* TABLET GRID (md–lg: 4+3) — uses same DayColumn */}
-                <div className="hidden md:grid xl:hidden grid-cols-2 lg:grid-cols-4 gap-3">
-                  {days.map((day, idx) => (
-                    <DayColumn
-                      key={toISODate(day)}
-                      day={day}
-                      weekdayFull={WEEKDAYS_FULL[idx]}
-                      weekdayShort={WEEKDAYS_SHORT[idx]}
-                      isToday={isSameDay(day, today)}
-                      planMap={planMap}
-                      dragOverKey={dragOverKey}
-                      pendingRecipe={pendingRecipe}
-                      busy={busy}
-                      noteText={notes[toISODate(day)] ?? ''}
-                      onNoteChange={handleNoteChange}
-                      onNoteBlur={handleNoteBlur}
-                      onOpenPicker={openPicker}
-                      onApplyPending={applyPending}
-                      onRemove={handleRemove}
-                      onSlotDragStart={handleSlotDragStart}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                      onDragEnd={() => {
-                        setDragSlotKey(null)
-                        setDragRecipeId(null)
-                        setDragOverKey(null)
-                      }}
-                      onRecipeClick={(id) => navigate(`/receitas/${id}`)}
-                    />
-                  ))}
-                </div>
+              {/* TABLET GRID (md–lg: 4+3) — uses same DayColumn */}
+              <div className="hidden md:grid xl:hidden grid-cols-2 lg:grid-cols-4 gap-3">
+                {days.map((day, idx) => (
+                  <DayColumn
+                    key={toISODate(day)}
+                    day={day}
+                    weekdayFull={WEEKDAYS_FULL[idx]}
+                    weekdayShort={WEEKDAYS_SHORT[idx]}
+                    isToday={isSameDay(day, today)}
+                    planMap={planMap}
+                    dragOverKey={dragOverKey}
+                    pendingRecipe={pendingRecipe}
+                    busy={busy}
+                    noteText={notes[toISODate(day)] ?? ''}
+                    onNoteChange={handleNoteChange}
+                    onNoteBlur={handleNoteBlur}
+                    onOpenPicker={openPicker}
+                    onApplyPending={applyPending}
+                    onRemove={handleRemove}
+                    onSlotDragStart={handleSlotDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={() => {
+                      setDragSlotKey(null)
+                      setDragRecipeId(null)
+                      setDragOverKey(null)
+                    }}
+                    onRecipeClick={(id) => navigate(`/receitas/${id}`)}
+                  />
+                ))}
+              </div>
 
-                {/* MOBILE ACCORDION (< md) */}
-                <div className="md:hidden">
-                  <Accordion type="single" defaultValue={toISODate(today)} collapsible>
-                    {days.map((day, idx) => {
-                      const iso = toISODate(day)
-                      const isToday = isSameDay(day, today)
-                      const dayMeals = MEAL_ORDER.filter((m) => planMap[slotKey(iso, m)]).length
-                      return (
-                        <AccordionItem
-                          key={iso}
-                          value={iso}
-                          className="bg-white rounded-2xl border border-marfim-border shadow-card mb-3 overflow-hidden"
-                        >
-                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                            <div className="flex items-center gap-3 text-left">
-                              <div
-                                className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 ${
-                                  isToday
-                                    ? 'bg-bronze/15 border border-bronze/40'
-                                    : 'bg-marfim-card border border-marfim-border'
-                                }`}
-                              >
-                                <span className="text-[9px] uppercase font-bold text-tinta-ter leading-none">
-                                  {WEEKDAYS_SHORT[idx]}
-                                </span>
-                                <span className="font-serif text-base font-bold text-tinta leading-none mt-0.5">
-                                  {day.getDate()}
-                                </span>
+              {/* MOBILE ACCORDION (< md) */}
+              <div className="md:hidden">
+                <Accordion type="single" defaultValue={toISODate(today)} collapsible>
+                  {days.map((day, idx) => {
+                    const iso = toISODate(day)
+                    const isToday = isSameDay(day, today)
+                    const dayMeals = MEAL_ORDER.filter((m) => planMap[slotKey(iso, m)]).length
+                    return (
+                      <AccordionItem
+                        key={iso}
+                        value={iso}
+                        className="bg-white rounded-2xl border border-marfim-border shadow-card mb-3 overflow-hidden"
+                      >
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                          <div className="flex items-center gap-3 text-left">
+                            <div
+                              className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 ${
+                                isToday
+                                  ? 'bg-bronze/15 border border-bronze/40'
+                                  : 'bg-marfim-card border border-marfim-border'
+                              }`}
+                            >
+                              <span className="text-[9px] uppercase font-bold text-tinta-ter leading-none">
+                                {WEEKDAYS_SHORT[idx]}
+                              </span>
+                              <span className="font-serif text-base font-bold text-tinta leading-none mt-0.5">
+                                {day.getDate()}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-serif text-base font-bold text-tinta">
+                                {WEEKDAYS_FULL[idx]}
                               </div>
-                              <div>
-                                <div className="font-serif text-base font-bold text-tinta">
-                                  {WEEKDAYS_FULL[idx]}
-                                </div>
-                                <div className="text-xs text-tinta-ter">
-                                  {dayMeals > 0
-                                    ? `${dayMeals} ${dayMeals === 1 ? 'refeição' : 'refeições'}`
-                                    : 'Sem refeições'}
-                                </div>
+                              <div className="text-xs text-tinta-ter">
+                                {dayMeals > 0
+                                  ? `${dayMeals} ${dayMeals === 1 ? 'refeição' : 'refeições'}`
+                                  : 'Sem refeições'}
                               </div>
                             </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="px-3 pb-3">
-                            <div className="space-y-2">
-                              {MEAL_ORDER.map((meal) => {
-                                const key = slotKey(iso, meal)
-                                const plan = planMap[key]
-                                const recipe = plan?.expand?.recipe
-                                const isDragOver = dragOverKey === key
-                                return (
-                                  <SlotCard
-                                    key={meal}
-                                    meal={meal}
-                                    plan={plan}
-                                    recipe={recipe}
-                                    isDragOver={isDragOver}
-                                    pendingRecipe={pendingRecipe}
-                                    busy={busy}
-                                    date={iso}
-                                    onOpenPicker={openPicker}
-                                    onApplyPending={applyPending}
-                                    onRemove={handleRemove}
-                                    onSlotDragStart={handleSlotDragStart}
-                                    onDragOver={handleDragOver}
-                                    onDrop={handleDrop}
-                                    onDragEnd={() => {
-                                      setDragSlotKey(null)
-                                      setDragRecipeId(null)
-                                      setDragOverKey(null)
-                                    }}
-                                    onRecipeClick={(id) => navigate(`/receitas/${id}`)}
-                                  />
-                                )
-                              })}
-                              <DayNotesField
-                                date={iso}
-                                value={notes[iso] ?? ''}
-                                onChange={handleNoteChange}
-                                onBlur={handleNoteBlur}
-                              />
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      )
-                    })}
-                  </Accordion>
-                </div>
-              </>
-            )}
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-3 pb-3">
+                          <div className="space-y-2">
+                            {MEAL_ORDER.map((meal) => {
+                              const key = slotKey(iso, meal)
+                              const plan = planMap[key]
+                              const recipe = plan?.expand?.recipe
+                              const isDragOver = dragOverKey === key
+                              return (
+                                <SlotCard
+                                  key={meal}
+                                  meal={meal}
+                                  plan={plan}
+                                  recipe={recipe}
+                                  isDragOver={isDragOver}
+                                  pendingRecipe={pendingRecipe}
+                                  busy={busy}
+                                  date={iso}
+                                  onOpenPicker={openPicker}
+                                  onApplyPending={applyPending}
+                                  onRemove={handleRemove}
+                                  onSlotDragStart={handleSlotDragStart}
+                                  onDragOver={handleDragOver}
+                                  onDrop={handleDrop}
+                                  onDragEnd={() => {
+                                    setDragSlotKey(null)
+                                    setDragRecipeId(null)
+                                    setDragOverKey(null)
+                                  }}
+                                  onRecipeClick={(id) => navigate(`/receitas/${id}`)}
+                                />
+                              )
+                            })}
+                            <DayNotesField
+                              date={iso}
+                              value={notes[iso] ?? ''}
+                              onChange={handleNoteChange}
+                              onBlur={handleNoteBlur}
+                            />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )
+                  })}
+                </Accordion>
+              </div>
+            </>
           </div>
 
           {/* SIDE TRAY — always visible (desktop) */}
@@ -1304,27 +1300,6 @@ const Planejador: React.FC = () => {
 // ----------------------------------------------------------------------------
 // Sub-components
 // ----------------------------------------------------------------------------
-
-const EMPTY_STATE: React.FC = () => (
-  <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-2xl border border-dashed border-marfim-border text-center">
-    <div className="w-24 h-24 rounded-full bg-verde-subtle border border-verde/20 flex items-center justify-center mb-5">
-      <CalendarDays className="w-11 h-11 text-verde" />
-    </div>
-    <h3 className="font-serif text-2xl font-bold text-tinta mb-2">Nenhum planejamento ainda</h3>
-    <p className="text-sm text-tinta-sec max-w-md leading-relaxed">
-      Adicione receitas aos dias da semana para começar. Use o botão
-      <span className="inline-flex items-center mx-1 px-1.5 py-0.5 rounded bg-marfim-card border border-marfim-border text-tinta font-medium">
-        <Plus className="w-3 h-3 mr-0.5" /> Adicionar
-      </span>
-      em cada refeição ou arraste uma receita da bandeja lateral.
-    </p>
-    <p className="text-xs text-tinta-ter max-w-md leading-relaxed mt-3">
-      No desktop, use a <strong className="text-tinta-sec">bandeja lateral</strong> à direita para
-      buscar e arrastar receitas. No celular, toque no botão flutuante{' '}
-      <Utensils className="inline w-3 h-3 -mt-0.5 text-verde" /> para abrir a bandeja.
-    </p>
-  </div>
-)
 
 interface DayColumnProps {
   day: Date
