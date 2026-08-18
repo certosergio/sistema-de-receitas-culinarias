@@ -4,6 +4,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { FavoritesProvider } from '@/contexts/FavoritesContext'
+import { SelectionProvider } from '@/contexts/SelectionContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 
@@ -19,6 +20,7 @@ import Techniques from '@/pages/Techniques'
 import Favoritos from '@/pages/Favoritos'
 import Colecoes from '@/pages/Colecoes'
 import ColecaoDetail from '@/pages/ColecaoDetail'
+import Selecionadas from '@/pages/Selecionadas'
 import Planejador from '@/pages/Planejador'
 import Compartilhar from '@/pages/Compartilhar'
 import NotFound from '@/pages/NotFound'
@@ -27,43 +29,46 @@ const App = () => (
   <BrowserRouter>
     <AuthProvider>
       <FavoritesProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            {/* Public Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/registro" element={<Register />} />
+        <SelectionProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              {/* Public Auth Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/registro" element={<Register />} />
 
-            {/* Protected Authenticated Routes */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<Index />} />
-              <Route path="/receitas" element={<RecipesList />} />
-              <Route path="/receitas/nova" element={<RecipeForm />} />
-              <Route path="/receitas/:id" element={<RecipeDetail />} />
-              <Route path="/receitas/:id/editar" element={<RecipeForm />} />
-              <Route path="/importar" element={<ImportarReceita />} />
-              <Route path="/categorias" element={<Categories />} />
-              <Route path="/tecnicas" element={<Techniques />} />
-              <Route path="/favoritos" element={<Favoritos />} />
-              <Route path="/colecoes" element={<Colecoes />} />
-              <Route path="/colecoes/:id" element={<ColecaoDetail />} />
-              <Route path="/planejador" element={<Planejador />} />
-            </Route>
+              {/* Protected Authenticated Routes */}
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/" element={<Index />} />
+                <Route path="/receitas" element={<RecipesList />} />
+                <Route path="/receitas/nova" element={<RecipeForm />} />
+                <Route path="/receitas/:id" element={<RecipeDetail />} />
+                <Route path="/receitas/:id/editar" element={<RecipeForm />} />
+                <Route path="/importar" element={<ImportarReceita />} />
+                <Route path="/categorias" element={<Categories />} />
+                <Route path="/tecnicas" element={<Techniques />} />
+                <Route path="/favoritos" element={<Favoritos />} />
+                <Route path="/selecionadas" element={<Selecionadas />} />
+                <Route path="/colecoes" element={<Colecoes />} />
+                <Route path="/colecoes/:id" element={<ColecaoDetail />} />
+                <Route path="/planejador" element={<Planejador />} />
+              </Route>
 
-            {/* Public share route (no auth required) */}
-            <Route path="/compartilhar/:shareToken" element={<Compartilhar />} />
+              {/* Public share route (no auth required) */}
+              <Route path="/compartilhar/:shareToken" element={<Compartilhar />} />
 
-            {/* 404 Fallback */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TooltipProvider>
+              {/* 404 Fallback */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </TooltipProvider>
+        </SelectionProvider>
       </FavoritesProvider>
     </AuthProvider>
   </BrowserRouter>

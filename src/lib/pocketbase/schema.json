@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-17T16:14:38.790Z",
+  "generatedAt": "2026-08-18T15:03:30.080Z",
   "collections": [
     {
       "name": "users",
@@ -673,6 +673,52 @@
         "CREATE UNIQUE INDEX idx_planning_history_user_week ON planning_history (user, week_start)",
         "CREATE INDEX idx_planning_history_user ON planning_history (user)",
         "CREATE INDEX idx_planning_history_week_start ON planning_history (week_start)"
+      ]
+    },
+    {
+      "name": "selected_recipes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "recipe",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "recipes"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_selected_recipes_user_recipe ON selected_recipes (user, recipe)",
+        "CREATE INDEX idx_selected_recipes_user ON selected_recipes (user)",
+        "CREATE INDEX idx_selected_recipes_recipe ON selected_recipes (recipe)"
       ]
     }
   ]

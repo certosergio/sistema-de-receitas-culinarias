@@ -26,6 +26,7 @@ import {
   Printer,
 } from 'lucide-react'
 import { RecipeActions } from '@/components/RecipeActions'
+import { SelectionToggle } from '@/components/SelectionToggle'
 import { DietaryBadges } from '@/components/DietaryBadges'
 import { exportRecipePdf } from '@/lib/recipePdf'
 import { PrintRecipe } from '@/components/PrintRecipe'
@@ -198,6 +199,9 @@ const RecipeDetail: React.FC = () => {
             )}
             <span>{exportingPdf ? 'Gerando...' : 'Exportar PDF'}</span>
           </Button>
+
+          {/* Selection toggle */}
+          <SelectionToggle recipeId={recipe.id} size="md" labelled />
 
           {/* Favorite & collection actions */}
           <RecipeActions recipeId={recipe.id} size="md" />

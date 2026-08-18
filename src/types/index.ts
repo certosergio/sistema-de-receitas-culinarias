@@ -155,6 +155,17 @@ export interface CollectionRecipe {
   updated: string
 }
 
+export interface SelectedRecipe {
+  id: string
+  user: string
+  recipe: string
+  expand?: {
+    recipe?: Recipe
+  }
+  created: string
+  updated: string
+}
+
 export interface RecipeFormData {
   title: string
   slug?: string

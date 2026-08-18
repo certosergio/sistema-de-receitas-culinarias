@@ -7,6 +7,7 @@ import { RecipeActions } from './RecipeActions'
 import { Clock, Users, Award, ChefHat } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { RecipeCardDietary } from './RecipeCardDietary'
+import { SelectionToggle } from './SelectionToggle'
 
 interface RecipeCardProps {
   recipe: Recipe

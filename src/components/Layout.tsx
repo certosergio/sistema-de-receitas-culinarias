@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSelection } from '@/contexts/SelectionContext'
 import {
   UtensilsCrossed,
   LayoutDashboard,
@@ -19,6 +20,7 @@ import {
   User as UserIcon,
   Sun,
   Moon,
+  ListChecks,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -33,10 +35,13 @@ import { useTheme } from '@/hooks/use-theme'
 
 const Layout: React.FC = () => {
   const { user, logout } = useAuth()
+  const { selectedIds } = useSelection()
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { theme, toggle: toggleTheme } = useTheme()
+
+  const selectionCount = selectedIds.size
 
   const handleLogout = () => {
     logout()
@@ -57,9 +62,15 @@ const Layout: React.FC = () => {
     return 'BC'
   }
 
-  const navItems = [
+  const navItems: {
+    label: string
+    to: string
+    icon: React.ComponentType<{ className?: string }>
+    badge?: number
+  }[] = [
     { label: 'Painel', to: '/', icon: LayoutDashboard },
     { label: 'Receitas', to: '/receitas', icon: BookOpen },
+    { label: 'Selecionadas', to: '/selecionadas', icon: ListChecks, badge: selectionCount },
     { label: 'Importar', to: '/importar', icon: Upload },
     { label: 'Categorias', to: '/categorias', icon: FolderTree },
     { label: 'Técnicas de Preparo', to: '/tecnicas', icon: Flame },
@@ -121,6 +132,11 @@ const Layout: React.FC = () => {
                     }`}
                   />
                   <span>{item.label}</span>
+                  {item.badge ? (
+                    <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-bronze text-white text-[10px] font-bold flex items-center justify-center">
+                      {item.badge}
+                    </span>
+                  ) : null}
                 </NavLink>
               )
             })}
