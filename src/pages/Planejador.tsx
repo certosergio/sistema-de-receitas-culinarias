@@ -1571,10 +1571,8 @@ const SlotCard: React.FC<SlotCardProps> = ({
             </>
           ) : (
             <>
-              <Plus className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="text-[10px] leading-none opacity-0 group-hover:opacity-100 transition-opacity">
-                Adicionar
-              </span>
+              <Plus className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-medium leading-none">Adicionar</span>
             </>
           )}
         </button>
