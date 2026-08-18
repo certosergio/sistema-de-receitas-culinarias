@@ -151,6 +151,17 @@ const RecipeDetail: React.FC = () => {
   const totalTime =
     (recipe.prep_minutes || 0) + (recipe.cook_minutes || 0) || recipe.total_minutes || 0
 
+  // Custo total: soma dos custos individuais dos ingredientes (com fallback
+  // para o campo recipe.cost legado quando não houver custos por ingrediente).
+  const ingredientsTotalCost = Array.isArray(recipe.ingredients)
+    ? recipe.ingredients.reduce((sum, ing) => {
+        const c = typeof ing.cost === 'number' ? ing.cost : 0
+        return sum + (isNaN(c) ? 0 : c)
+      }, 0)
+    : 0
+  const displayCost = ingredientsTotalCost > 0 ? ingredientsTotalCost : recipe.cost || 0
+  const formatBRL = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
+
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       {/* TOP NAVIGATION BAR */}
@@ -388,83 +399,20 @@ const RecipeDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Custo Estimado */}
+          {/* Custo Estimado (soma dos ingredientes) */}
           <div className="p-4 rounded-2xl bg-marfim border border-marfim-border space-y-1 col-span-2 sm:col-span-2">
             <div className="flex items-center gap-1.5 text-tinta-ter">
               <DollarSign className="w-4 h-4 text-emerald-700" />
               <span className="label-caps text-[10px]">Custo Estimado</span>
             </div>
             <div className="font-serif text-2xl sm:text-3xl font-bold text-tinta">
-              {recipe.cost
-                ? `R$ ${Number(recipe.cost).toFixed(2).replace('.', ',')}`
-                : 'Não calculado'}
+              {displayCost > 0 ? formatBRL(displayCost) : 'Não calculado'}
             </div>
-          </div>
-        </div>
-
-        {/* Nutritional Breakdown Bar */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-marfim-card border border-marfim-border space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="label-caps text-xs">Valor Nutricional por porção</span>
-            <span className="text-xs font-mono text-tinta-sec">Estimativa de macronutrientes</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1">
-            {/* Calorias */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-tinta-sec">Calorias</span>
-                <span className="font-bold text-tinta">{recipe.calories || 0} kcal</span>
-              </div>
-              <div className="h-2 rounded-full bg-white overflow-hidden border border-marfim-border">
-                <div
-                  className="h-full bg-amber-500 rounded-full"
-                  style={{ width: `${Math.min(100, ((recipe.calories || 0) / 800) * 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Proteínas */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-tinta-sec">Proteínas</span>
-                <span className="font-bold text-tinta">{recipe.protein || 0} g</span>
-              </div>
-              <div className="h-2 rounded-full bg-white overflow-hidden border border-marfim-border">
-                <div
-                  className="h-full bg-rose-600 rounded-full"
-                  style={{ width: `${Math.min(100, ((recipe.protein || 0) / 60) * 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Carboidratos */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-tinta-sec">Carboidratos</span>
-                <span className="font-bold text-tinta">{recipe.carbs || 0} g</span>
-              </div>
-              <div className="h-2 rounded-full bg-white overflow-hidden border border-marfim-border">
-                <div
-                  className="h-full bg-sky-600 rounded-full"
-                  style={{ width: `${Math.min(100, ((recipe.carbs || 0) / 100) * 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Gorduras */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-tinta-sec">Gorduras</span>
-                <span className="font-bold text-tinta">{recipe.fat || 0} g</span>
-              </div>
-              <div className="h-2 rounded-full bg-white overflow-hidden border border-marfim-border">
-                <div
-                  className="h-full bg-emerald-600 rounded-full"
-                  style={{ width: `${Math.min(100, ((recipe.fat || 0) / 50) * 100)}%` }}
-                />
-              </div>
-            </div>
+            {ingredientsTotalCost > 0 && (
+              <span className="text-[11px] text-tinta-ter">
+                Soma do custo individual dos ingredientes
+              </span>
+            )}
           </div>
         </div>
       </section>
@@ -499,12 +447,29 @@ const RecipeDetail: React.FC = () => {
                     )}
                     <span>{ing.name}</span>
                   </div>
+                  <span className="shrink-0 text-right font-mono text-xs sm:text-sm font-semibold text-tinta-sec min-w-[78px]">
+                    {typeof ing.cost === 'number' && !isNaN(ing.cost) && ing.cost > 0
+                      ? formatBRL(ing.cost)
+                      : '—'}
+                  </span>
                 </div>
               ))
             ) : (
               <p className="text-sm text-tinta-sec italic">Nenhum ingrediente informado.</p>
             )}
           </div>
+
+          {/* Custo total da lista de ingredientes */}
+          {ingredientsTotalCost > 0 && (
+            <div className="flex items-center justify-between gap-3 pt-4 border-t-2 border-marfim-border">
+              <span className="text-xs font-bold text-tinta uppercase tracking-wider">
+                Custo total dos ingredientes
+              </span>
+              <span className="font-serif text-xl font-bold text-verde font-mono">
+                {formatBRL(ingredientsTotalCost)}
+              </span>
+            </div>
+          )}
         </section>
 
         {/* METHOD (7 cols) */}

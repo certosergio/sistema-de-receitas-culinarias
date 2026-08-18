@@ -50,6 +50,17 @@ export const PrintRecipe: React.FC<PrintPortalProps> = ({ recipe, coverUrl }) =>
   const totalTime =
     (recipe.prep_minutes || 0) + (recipe.cook_minutes || 0) || recipe.total_minutes || 0
 
+  // Custo total: soma dos custos individuais dos ingredientes (com fallback
+  // para o campo recipe.cost legado quando não houver custos por ingrediente).
+  const ingredientsTotalCost = Array.isArray(recipe.ingredients)
+    ? recipe.ingredients.reduce((sum, ing) => {
+        const c = typeof ing.cost === 'number' ? ing.cost : 0
+        return sum + (isNaN(c) ? 0 : c)
+      }, 0)
+    : 0
+  const displayCost = ingredientsTotalCost > 0 ? ingredientsTotalCost : recipe.cost || 0
+  const formatBRL = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
+
   return createPortal(
     <div className="font-sans text-tinta bg-white max-w-[820px] mx-auto px-2 py-2 text-[12px] leading-relaxed">
       {/* HEADER */}
@@ -136,52 +147,10 @@ export const PrintRecipe: React.FC<PrintPortalProps> = ({ recipe, coverUrl }) =>
               Custo estimado
             </div>
             <div className="font-serif text-base font-bold text-tinta">
-              {recipe.cost ? `R$ ${Number(recipe.cost).toFixed(2).replace('.', ',')}` : '-'}
+              {displayCost > 0 ? formatBRL(displayCost) : '-'}
             </div>
           </div>
         </div>
-      </section>
-
-      {/* NUTRITIONAL TABLE */}
-      <section className="print-avoid-break mt-4">
-        <h2 className="font-serif text-base font-bold text-tinta border-b border-marfim-border pb-1 mb-2">
-          Informação nutricional{' '}
-          <span className="text-[9px] font-normal text-tinta-ter">(por porção)</span>
-        </h2>
-        <table className="w-full text-[11px] border-collapse">
-          <thead>
-            <tr className="bg-marfim-card">
-              <th className="border border-marfim-border text-left p-1.5 font-semibold text-tinta">
-                Calorias
-              </th>
-              <th className="border border-marfim-border text-left p-1.5 font-semibold text-tinta">
-                Proteínas
-              </th>
-              <th className="border border-marfim-border text-left p-1.5 font-semibold text-tinta">
-                Carboidratos
-              </th>
-              <th className="border border-marfim-border text-left p-1.5 font-semibold text-tinta">
-                Gorduras
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="border border-marfim-border p-1.5 font-bold text-tinta">
-                {recipe.calories || 0} kcal
-              </td>
-              <td className="border border-marfim-border p-1.5 font-bold text-tinta">
-                {recipe.protein || 0} g
-              </td>
-              <td className="border border-marfim-border p-1.5 font-bold text-tinta">
-                {recipe.carbs || 0} g
-              </td>
-              <td className="border border-marfim-border p-1.5 font-bold text-tinta">
-                {recipe.fat || 0} g
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </section>
 
       {/* TWO COLUMNS: INGREDIENTS + METHOD */}
@@ -195,7 +164,7 @@ export const PrintRecipe: React.FC<PrintPortalProps> = ({ recipe, coverUrl }) =>
               recipe.ingredients.map((ing, idx) => (
                 <li key={idx} className="flex gap-1.5">
                   <span className="text-bronze">•</span>
-                  <span>
+                  <span className="flex-1">
                     {(ing.quantity || ing.unit) && (
                       <strong className="font-semibold mr-1">
                         {ing.quantity} {ing.unit}
@@ -203,12 +172,27 @@ export const PrintRecipe: React.FC<PrintPortalProps> = ({ recipe, coverUrl }) =>
                     )}
                     {ing.name}
                   </span>
+                  <span className="font-mono text-[10px] text-tinta-sec shrink-0 ml-2">
+                    {typeof ing.cost === 'number' && !isNaN(ing.cost) && ing.cost > 0
+                      ? formatBRL(ing.cost)
+                      : '—'}
+                  </span>
                 </li>
               ))
             ) : (
               <li className="italic text-tinta-ter">Nenhum ingrediente informado.</li>
             )}
           </ul>
+          {ingredientsTotalCost > 0 && (
+            <div className="mt-2 pt-1.5 border-t border-marfim-border flex items-center justify-between">
+              <span className="text-[10px] font-bold text-tinta uppercase tracking-wider">
+                Custo total
+              </span>
+              <span className="font-serif text-sm font-bold text-verde">
+                {formatBRL(ingredientsTotalCost)}
+              </span>
+            </div>
+          )}
         </div>
         <div>
           <h2 className="font-serif text-base font-bold text-tinta border-b border-marfim-border pb-1 mb-2">

@@ -4,6 +4,7 @@ import { getRecipeById, createRecipe, updateRecipe, getRecipeCoverUrl } from '@/
 import { getCategories } from '@/services/categories'
 import { getTechniques } from '@/services/techniques'
 import { Category, Technique, IngredientItem, RecipeFormData } from '@/types'
+
 import { RecipePlaceholder } from '@/components/RecipePlaceholder'
 import ImportRecipeDialog from '@/components/ImportRecipeDialog'
 import { DietaryChips } from '@/components/DietaryBadges'
@@ -20,14 +21,12 @@ import {
   Clock,
   Users,
   Award,
-  DollarSign,
   Zap,
   ChefHat,
   Loader2,
   Image as ImageIcon,
   CheckCircle2,
   AlertCircle,
-  X,
   Wand2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -42,6 +41,34 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
+
+/** Form-local ingredient shape: cost is a string while editing. */
+type FormIngredient = {
+  name: string
+  quantity: string
+  unit: string
+  cost: string
+}
+
+const emptyIngredient = (): FormIngredient => ({ name: '', quantity: '', unit: 'g', cost: '' })
+
+const toFormIngredient = (i: IngredientItem): FormIngredient => ({
+  name: i.name || '',
+  quantity: i.quantity || '',
+  unit: i.unit || '',
+  cost: i.cost !== undefined && i.cost !== null ? String(i.cost) : '',
+})
+
+/** Convert the form-local ingredient (cost as string) back to the API shape. */
+const toIngredientItem = (i: FormIngredient): IngredientItem => {
+  const num = Number(String(i.cost).replace(',', '.'))
+  return {
+    name: i.name,
+    quantity: i.quantity,
+    unit: i.unit,
+    ...(i.cost !== '' && !isNaN(num) ? { cost: num } : {}),
+  }
+}
 
 const RecipeForm: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -66,11 +93,6 @@ const RecipeForm: React.FC = () => {
   const [portions, setPortions] = useState('')
   const [prepMinutes, setPrepMinutes] = useState<number | string>('')
   const [cookMinutes, setCookMinutes] = useState<number | string>('')
-  const [cost, setCost] = useState<number | string>('')
-  const [calories, setCalories] = useState<number | string>('')
-  const [protein, setProtein] = useState<number | string>('')
-  const [carbs, setCarbs] = useState<number | string>('')
-  const [fat, setFat] = useState<number | string>('')
   const [tips, setTips] = useState('')
 
   // Dietary restriction flags (migration 0006).
@@ -80,9 +102,7 @@ const RecipeForm: React.FC = () => {
   const [importOpen, setImportOpen] = useState(false)
 
   // Dynamic Lists
-  const [ingredients, setIngredients] = useState<IngredientItem[]>([
-    { name: '', quantity: '', unit: 'g' },
-  ])
+  const [ingredients, setIngredients] = useState<FormIngredient[]>([emptyIngredient()])
   const [method, setMethod] = useState<string[]>([''])
 
   // Cover image management
@@ -115,11 +135,6 @@ const RecipeForm: React.FC = () => {
           setPortions(rec.portions || '')
           setPrepMinutes(rec.prep_minutes !== undefined ? rec.prep_minutes : '')
           setCookMinutes(rec.cook_minutes !== undefined ? rec.cook_minutes : '')
-          setCost(rec.cost !== undefined ? rec.cost : '')
-          setCalories(rec.calories !== undefined ? rec.calories : '')
-          setProtein(rec.protein !== undefined ? rec.protein : '')
-          setCarbs(rec.carbs !== undefined ? rec.carbs : '')
-          setFat(rec.fat !== undefined ? rec.fat : '')
           setTips(rec.tips || '')
 
           setDietary({
@@ -133,7 +148,7 @@ const RecipeForm: React.FC = () => {
           })
 
           if (Array.isArray(rec.ingredients) && rec.ingredients.length > 0) {
-            setIngredients(rec.ingredients)
+            setIngredients(rec.ingredients.map(toFormIngredient))
           }
           if (Array.isArray(rec.method) && rec.method.length > 0) {
             setMethod(rec.method)
@@ -207,20 +222,31 @@ const RecipeForm: React.FC = () => {
     return p + c
   }, [prepMinutes, cookMinutes])
 
+  // Auto-calculated total cost: sum of per-ingredient costs.
+  const totalCost = useMemo(() => {
+    return ingredients.reduce((sum, ing) => {
+      if (!ing.cost) return sum
+      const n = Number(String(ing.cost).replace(',', '.'))
+      return isNaN(n) ? sum : sum + n
+    }, 0)
+  }, [ingredients])
+
+  const formatBRL = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
+
   // Dynamic ingredients operations
   const addIngredient = () => {
-    setIngredients([...ingredients, { name: '', quantity: '', unit: 'g' }])
+    setIngredients([...ingredients, emptyIngredient()])
   }
 
   const removeIngredient = (index: number) => {
     if (ingredients.length === 1) {
-      setIngredients([{ name: '', quantity: '', unit: 'g' }])
+      setIngredients([emptyIngredient()])
       return
     }
     setIngredients(ingredients.filter((_, idx) => idx !== index))
   }
 
-  const updateIngredient = (index: number, field: keyof IngredientItem, value: string) => {
+  const updateIngredient = (index: number, field: keyof FormIngredient, value: string) => {
     const copy = [...ingredients]
     copy[index] = { ...copy[index], [field]: value }
     setIngredients(copy)
@@ -276,7 +302,7 @@ const RecipeForm: React.FC = () => {
     if (parsed.difficulty) setDifficulty(parsed.difficulty as typeof difficulty)
     if (parsed.tips) setTips(parsed.tips)
     if (Array.isArray(parsed.ingredients) && parsed.ingredients.length > 0) {
-      setIngredients(parsed.ingredients)
+      setIngredients(parsed.ingredients.map(toFormIngredient))
     }
     if (Array.isArray(parsed.method) && parsed.method.length > 0) {
       setMethod(parsed.method)
@@ -334,6 +360,8 @@ const RecipeForm: React.FC = () => {
 
     setSubmitting(true)
 
+    const ingredientsPayload = ingredients.map(toIngredientItem)
+
     const formData: RecipeFormData = {
       title,
       summary,
@@ -345,12 +373,9 @@ const RecipeForm: React.FC = () => {
       portions,
       prep_minutes: prepMinutes,
       cook_minutes: cookMinutes,
-      cost,
-      calories,
-      protein,
-      carbs,
-      fat,
-      ingredients,
+      // Recipe-level cost is auto-calculated as the sum of per-ingredient costs.
+      cost: totalCost,
+      ingredients: ingredientsPayload,
       method,
       tips,
       contains_gluten: dietary.contains_gluten,
@@ -663,9 +688,7 @@ const RecipeForm: React.FC = () => {
                 <h2 className="font-serif text-xl font-bold text-tinta">
                   Ficha Técnica &amp; Métricas
                 </h2>
-                <p className="text-xs text-tinta-sec">
-                  Rendimento, tempos, custos e tabela nutricional.
-                </p>
+                <p className="text-xs text-tinta-sec">Rendimento, tempos e custos.</p>
               </div>
             </div>
 
@@ -777,7 +800,7 @@ const RecipeForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Dificuldade & Custo */}
+            {/* Dificuldade & Custo (auto-calculado) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="difficulty" className="label-caps block mb-1.5">
@@ -799,99 +822,16 @@ const RecipeForm: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="cost" className="label-caps block mb-1.5">
-                  Custo Estimado (R$)
-                </Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={cost}
-                  onChange={(e) => setCost(e.target.value)}
-                  placeholder="Ex.: 45.00"
-                  className="h-11 bg-marfim/30 focus:bg-white rounded-xl focus-visible:ring-verde"
-                />
-              </div>
-            </div>
-
-            {/* Tabela Nutricional por porção */}
-            <div className="p-4 rounded-xl bg-marfim border border-marfim-border space-y-3">
-              <span className="label-caps text-xs block">
-                Valor Nutricional por Porção (Opcional)
-              </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <Label
-                    htmlFor="calories"
-                    className="text-[11px] text-tinta-sec font-semibold block mb-1"
-                  >
-                    Calorias (kcal)
-                  </Label>
-                  <Input
-                    id="calories"
-                    type="number"
-                    min="0"
-                    value={calories}
-                    onChange={(e) => setCalories(e.target.value)}
-                    placeholder="350"
-                    className="h-10 bg-white rounded-lg text-xs"
-                  />
+                <Label className="label-caps block mb-1.5">Custo Total (Automático)</Label>
+                <div className="h-11 bg-verde-subtle border border-verde/20 rounded-xl flex items-center justify-between px-4 text-verde font-bold font-mono">
+                  <span className="text-xs font-sans font-medium text-verde/70">
+                    Soma dos ingredientes
+                  </span>
+                  <span>{formatBRL(totalCost)}</span>
                 </div>
-                <div>
-                  <Label
-                    htmlFor="protein"
-                    className="text-[11px] text-tinta-sec font-semibold block mb-1"
-                  >
-                    Proteínas (g)
-                  </Label>
-                  <Input
-                    id="protein"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={protein}
-                    onChange={(e) => setProtein(e.target.value)}
-                    placeholder="12.5"
-                    className="h-10 bg-white rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="carbs"
-                    className="text-[11px] text-tinta-sec font-semibold block mb-1"
-                  >
-                    Carboidratos (g)
-                  </Label>
-                  <Input
-                    id="carbs"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={carbs}
-                    onChange={(e) => setCarbs(e.target.value)}
-                    placeholder="45.0"
-                    className="h-10 bg-white rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="fat"
-                    className="text-[11px] text-tinta-sec font-semibold block mb-1"
-                  >
-                    Gorduras (g)
-                  </Label>
-                  <Input
-                    id="fat"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={fat}
-                    onChange={(e) => setFat(e.target.value)}
-                    placeholder="8.0"
-                    className="h-10 bg-white rounded-lg text-xs"
-                  />
-                </div>
+                <p className="text-[11px] text-tinta-ter mt-1">
+                  Calculado automaticamente a partir do custo individual de cada ingrediente abaixo.
+                </p>
               </div>
             </div>
           </section>
@@ -959,6 +899,24 @@ const RecipeForm: React.FC = () => {
                     />
                   </div>
 
+                  <div className="w-[100px] shrink-0">
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-mono text-tinta-ter pointer-events-none">
+                        R$
+                      </span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0,00"
+                        value={ing.cost}
+                        onChange={(e) => updateIngredient(idx, 'cost', e.target.value)}
+                        className="h-10 bg-white rounded-lg text-xs font-mono pl-7 text-right"
+                        title="Custo individual do ingrediente (R$)"
+                      />
+                    </div>
+                  </div>
+
                   <Button
                     type="button"
                     variant="ghost"
@@ -971,6 +929,16 @@ const RecipeForm: React.FC = () => {
                   </Button>
                 </div>
               ))}
+            </div>
+
+            {/* Custo total da lista de ingredientes */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-marfim-border/70">
+              <span className="text-xs font-semibold text-tinta-sec uppercase tracking-wider">
+                Custo total dos ingredientes
+              </span>
+              <span className="font-serif text-lg font-bold text-verde font-mono">
+                {formatBRL(totalCost)}
+              </span>
             </div>
 
             <Button
@@ -1226,14 +1194,7 @@ const RecipeForm: React.FC = () => {
               <div className="p-2.5 rounded-lg bg-marfim border border-marfim-border">
                 <span className="label-caps block text-[9px] text-tinta-ter">Custo Est.</span>
                 <span className="font-serif text-base font-bold text-tinta">
-                  {cost ? `R$ ${Number(cost).toFixed(2).replace('.', ',')}` : '-'}
-                </span>
-              </div>
-
-              <div className="p-2.5 rounded-lg bg-marfim border border-marfim-border">
-                <span className="label-caps block text-[9px] text-tinta-ter">Calorias</span>
-                <span className="font-serif text-base font-bold text-tinta">
-                  {calories ? `${calories} kcal` : '-'}
+                  {totalCost > 0 ? formatBRL(totalCost) : '-'}
                 </span>
               </div>
             </div>

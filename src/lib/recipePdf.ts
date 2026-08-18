@@ -199,62 +199,6 @@ export function exportRecipePdf(recipe: Recipe): void {
   })
   y += Math.ceil(techRows.length / cols) * cellH + 12
 
-  // ── Nutritional table ─────────────────────────────────────────
-  ensureSpace(80)
-  sectionTitle('Valor Nutricional por Porção')
-  const nutri: { label: string; value: string; pct: number }[] = [
-    {
-      label: 'Calorias',
-      value: `${recipe.calories || 0} kcal`,
-      pct: Math.min(100, ((recipe.calories || 0) / 800) * 100),
-    },
-    {
-      label: 'Proteínas',
-      value: `${recipe.protein || 0} g`,
-      pct: Math.min(100, ((recipe.protein || 0) / 60) * 100),
-    },
-    {
-      label: 'Carboidratos',
-      value: `${recipe.carbs || 0} g`,
-      pct: Math.min(100, ((recipe.carbs || 0) / 100) * 100),
-    },
-    {
-      label: 'Gorduras',
-      value: `${recipe.fat || 0} g`,
-      pct: Math.min(100, ((recipe.fat || 0) / 50) * 100),
-    },
-    { label: 'Fibras', value: `${(recipe as Recipe & { fiber?: number }).fiber ?? 0} g`, pct: 0 },
-  ]
-
-  const nCols = 5
-  const nCellW = contentW / nCols
-  nutri.forEach((n, i) => {
-    const cx = margin + i * nCellW
-    setFill(COLORS.marfim)
-    setDraw(COLORS.border)
-    doc.setLineWidth(0.5)
-    doc.roundedRect(cx + 2, y, nCellW - 4, 56, 4, 4, 'FD')
-    setText(COLORS.tintaTer)
-    doc.setFont(SANS, 'bold')
-    doc.setFontSize(7)
-    doc.text(n.label.toUpperCase(), cx + nCellW / 2, y + 14, { align: 'center' })
-    setText(COLORS.tinta)
-    doc.setFont(SERIF, 'bold')
-    doc.setFontSize(12)
-    doc.text(n.value, cx + nCellW / 2, y + 32, { align: 'center' })
-    // bar
-    const barW = nCellW - 20
-    const barX = cx + 10
-    const barY = y + 42
-    setFill(COLORS.border)
-    doc.roundedRect(barX, barY, barW, 5, 2.5, 2.5, 'F')
-    if (n.pct > 0) {
-      setFill(COLORS.bronze)
-      doc.roundedRect(barX, barY, (barW * n.pct) / 100, 5, 2.5, 2.5, 'F')
-    }
-  })
-  y += 68
-
   // ── Ingredients ───────────────────────────────────────────────
   const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
   ensureSpace(50)

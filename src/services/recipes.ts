@@ -268,15 +268,8 @@ export function isRecipeComplete(recipe: Recipe): boolean {
     (recipe.cook_minutes !== undefined && recipe.cook_minutes !== null)
   const hasDifficulty = !!recipe.difficulty
   const hasCost = recipe.cost !== undefined && recipe.cost !== null && recipe.cost > 0
-  const hasNutri =
-    (recipe.calories || 0) > 0 ||
-    (recipe.protein || 0) > 0 ||
-    (recipe.carbs || 0) > 0 ||
-    (recipe.fat || 0) > 0
   const hasIngredients = Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
   const hasMethod = Array.isArray(recipe.method) && recipe.method.length > 0
 
-  return Boolean(
-    hasYield && hasTimes && hasDifficulty && hasCost && hasNutri && hasIngredients && hasMethod,
-  )
+  return Boolean(hasYield && hasTimes && hasDifficulty && hasCost && hasIngredients && hasMethod)
 }

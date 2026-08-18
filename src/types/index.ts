@@ -30,6 +30,8 @@ export interface IngredientItem {
   name: string
   quantity: string
   unit: string
+  /** Custo individual do ingrediente (R$). Opcional para compatibilidade. */
+  cost?: number
 }
 
 export interface Recipe {
@@ -166,10 +168,11 @@ export interface RecipeFormData {
   prep_minutes: number | string
   cook_minutes: number | string
   cost: number | string
-  calories: number | string
-  protein: number | string
-  carbs: number | string
-  fat: number | string
+  /** Campos de valor nutricional — mantidos para compatibilidade de dados, sem UI. */
+  calories?: number | string
+  protein?: number | string
+  carbs?: number | string
+  fat?: number | string
   ingredients: IngredientItem[]
   method: string[]
   tips: string
