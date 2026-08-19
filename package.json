@@ -15,7 +15,9 @@
     "format:check": "oxfmt --check",
     "preview": "vite preview",
     "test": "echo \"there are no tests for this project\" && exit 0",
-    "test:watch": "echo \"there are no tests for this project\" && exit 0"
+    "test:watch": "echo \"there are no tests for this project\" && exit 0",
+    "export:pocketbase": "node scripts/export_pocketbase.js",
+    "import:pocketbase": "node scripts/import_pocketbase.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
