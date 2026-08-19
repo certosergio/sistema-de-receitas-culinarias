@@ -114,9 +114,9 @@ if [ -z "$PB_VERSION" ]; then
   fi
 
   if [ -z "$PB_VERSION" ]; then
-    fail "Não foi possível obter a versão mais recente do PocketBase."
-    fail "Defina manualmente: PB_VERSION=0.26.9 ./scripts/setup-local.sh"
-    exit 1
+    warn "Não foi possível obter a versão mais recente do PocketBase (possível rate limit do GitHub)."
+    warn "Usando versão fallback: 0.26.9"
+    PB_VERSION="0.26.9"
   fi
 fi
 
@@ -129,12 +129,21 @@ ok "Versão do PocketBase: ${PB_VERSION}"
 # -----------------------------------------------------------------------------
 ZIP_NAME="pocketbase_${PB_VERSION}_${PLATFORM}.zip"
 DOWNLOAD_URL="https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/${ZIP_NAME}"
-TMP_DIR="$(mktemp -d)"
+# Tenta 3 formas de criar um diretório temporário antes de desistir
+TMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t pb_setup 2>/dev/null)" \
+  || { TMP_DIR="/tmp/pb_setup_$$"; mkdir -p "$TMP_DIR"; } \
+  || true
+
+if [ -z "$TMP_DIR" ] || [ ! -d "$TMP_DIR" ]; then
+  fail "Não foi possível criar um diretório temporário para o download."
+  fail "Verifique as permissões de /tmp ou defina TMPDIR manualmente."
+  exit 1
+fi
 ZIP_PATH="${TMP_DIR}/${ZIP_NAME}"
 
 info "Baixando: ${DOWNLOAD_URL}"
 if command -v curl >/dev/null 2>&1; then
-  curl -fsSL -o "$ZIP_PATH" "$DOWNLOAD_URL"
+  curl -fL -o "$ZIP_PATH" "$DOWNLOAD_URL"
 else
   wget -qO "$ZIP_PATH" "$DOWNLOAD_URL"
 fi
