@@ -25,6 +25,34 @@ Este projeto foi criado de ponta a ponta com o [Skip](https://goskip.dev).
 npm install
 ```
 
+## 🏠 Rodando localmente (com PocketBase)
+
+O backend do projeto é um [PocketBase](https://pocketbase.com) provisionado no
+Skip Cloud. Para rodar tudo na sua máquina, há um script que baixa o binário do
+PocketBase e configura o ambiente automaticamente.
+
+```bash
+# 1. Configura o PocketBase local (baixa binário, cria pb_data, ajusta .env)
+./scripts/setup-local.sh
+
+# 2. Em um terminal, suba o PocketBase na porta 8090
+./pocketbase serve
+
+# 3. Em outro terminal, suba o frontend
+npm run dev
+```
+
+- **App:** http://localhost:5173
+- **Admin do PocketBase:** http://localhost:8090/_/ — na primeira execução,
+  crie uma conta de superusuário pelo painel.
+- **`.env`:** para desenvolvimento local, use
+  `VITE_POCKETBASE_URL=http://localhost:8090`. O script cuida disso
+  automaticamente; para voltar à instância do Skip Cloud, ajuste a variável no
+  `.env` conforme necessário.
+
+> Os dados locais ficam em `pb_data/`. O binário `pocketbase` e a pasta
+> `pb_data/` já estão no `.gitignore`.
+
 ## 💻 Scripts Disponíveis
 
 ### Desenvolvimento
