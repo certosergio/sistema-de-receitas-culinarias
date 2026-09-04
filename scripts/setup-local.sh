@@ -6,6 +6,8 @@
 #  desenvolvimento local, cria a pasta pb_data e configura o .env.
 #
 #  Uso:
+#    bash scripts/setup-local.sh
+#    # ou
 #    ./scripts/setup-local.sh
 #
 #  Depois de rodar este script:
@@ -43,10 +45,12 @@ fail()  { printf "${C_RED}✗${C_RESET} %s\n" "$*" >&2; }
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
+# Garante a existência do diretório pb/ ANTES de qualquer download ou operação
 PB_DIR="${PROJECT_ROOT}/pb"
 mkdir -p "$PB_DIR"
 
 info "Diretório do projeto: ${PROJECT_ROOT}"
+info "Diretório de destino: ${PB_DIR}"
 
 # -----------------------------------------------------------------------------
 #  Detecta sistema operacional e arquitetura
@@ -99,91 +103,136 @@ PLATFORM="$(detect_platform)"
 info "Plataforma detectada: ${PLATFORM}"
 
 # -----------------------------------------------------------------------------
-#  Descobre a versão mais recente do PocketBase via API do GitHub
+#  Descobre a versão mais recente do PocketBase via API do GitHub (com fallback)
 # -----------------------------------------------------------------------------
+FALLBACK_PB_VERSION="0.26.9"
+
 if [ -z "$PB_VERSION" ]; then
   info "Consultando a versão mais recente do PocketBase no GitHub..."
+  GITHUB_API_URL="https://api.github.com/repos/pocketbase/pocketbase/releases/latest"
+  API_RESPONSE=""
+
   if command -v curl >/dev/null 2>&1; then
-    PB_VERSION="$(curl -fsSL https://api.github.com/repos/pocketbase/pocketbase/releases/latest \
-      | grep -m 1 '"tag_name"' \
-      | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
+    # curl com -L, timeout razoável e sem silenciar erros fatais
+    API_RESPONSE="$(curl -fL --connect-timeout 5 --max-time 15 "$GITHUB_API_URL" 2>/dev/null || true)"
   elif command -v wget >/dev/null 2>&1; then
-    PB_VERSION="$(wget -qO- https://api.github.com/repos/pocketbase/pocketbase/releases/latest \
+    API_RESPONSE="$(wget -qO- --timeout=15 "$GITHUB_API_URL" 2>/dev/null || true)"
+  fi
+
+  if [ -n "$API_RESPONSE" ]; then
+    PB_VERSION="$(echo "$API_RESPONSE" \
       | grep -m 1 '"tag_name"' \
-      | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
-  else
-    fail "Nem curl nem wget estão disponíveis. Instale um dos dois e tente novamente."
-    exit 1
+      | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' || true)"
   fi
 
   if [ -z "$PB_VERSION" ]; then
-    warn "Não foi possível obter a versão mais recente do PocketBase (possível rate limit do GitHub)."
-    warn "Usando versão fallback: 0.26.9"
-    PB_VERSION="0.26.9"
+    warn "Não foi possível obter a versão mais recente do PocketBase via API do GitHub (possível rate limit ou sem internet)."
+    warn "Usando versão fixa conhecida (fallback): ${FALLBACK_PB_VERSION}"
+    PB_VERSION="${FALLBACK_PB_VERSION}"
   fi
 fi
 
 # Remove um possível 'v' inicial (ex.: v0.26.9 -> 0.26.9)
 PB_VERSION="${PB_VERSION#v}"
-ok "Versão do PocketBase: ${PB_VERSION}"
+ok "Versão do PocketBase selecionada: ${PB_VERSION}"
 
 # -----------------------------------------------------------------------------
-#  Baixa o binário (zip) caso ainda não exista localmente
+#  Garante permissão de escrita em pb/ antes de baixar
 # -----------------------------------------------------------------------------
-ZIP_NAME="pocketbase_${PB_VERSION}_${PLATFORM}.zip"
-DOWNLOAD_URL="https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/${ZIP_NAME}"
-# Tenta 3 formas de criar um diretório temporário antes de desistir
-TMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t pb_setup 2>/dev/null)" \
-  || { TMP_DIR="/tmp/pb_setup_$$"; mkdir -p "$TMP_DIR"; } \
-  || true
-
-if [ -z "$TMP_DIR" ] || [ ! -d "$TMP_DIR" ]; then
-  fail "Não foi possível criar um diretório temporário para o download."
-  fail "Verifique as permissões de /tmp ou defina TMPDIR manualmente."
+WRITE_TEST_FILE="${PB_DIR}/.write_test_$$"
+if ! touch "$WRITE_TEST_FILE" 2>/dev/null; then
+  fail "Sem permissão de escrita no diretório ${PB_DIR}."
+  fail "Verifique as permissões do diretório e execute novamente."
   exit 1
 fi
-ZIP_PATH="${TMP_DIR}/${ZIP_NAME}"
+rm -f "$WRITE_TEST_FILE"
 
-info "Baixando: ${DOWNLOAD_URL}"
+# -----------------------------------------------------------------------------
+#  Baixa o arquivo zip diretamente no diretório do projeto pb/
+#  Evita problemas com mktemp inválido/vazio ou tmpfs restrito no macOS/Linux
+# -----------------------------------------------------------------------------
+ZIP_NAME="pocketbase_${PB_VERSION}_${PLATFORM}.zip"
+ZIP_PATH="${PB_DIR}/${ZIP_NAME}"
+DOWNLOAD_URL="https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/${ZIP_NAME}"
+
+info "Baixando PocketBase de: ${DOWNLOAD_URL}"
+info "Destino temporário do zip: ${ZIP_PATH}"
+
+# Garante limpeza do zip se o script for interrompido
+cleanup_zip() {
+  rm -f "$ZIP_PATH"
+}
+trap cleanup_zip EXIT
+
 if command -v curl >/dev/null 2>&1; then
-  curl -fL -o "$ZIP_PATH" "$DOWNLOAD_URL"
+  # curl com -L (seguir redirects), sem -s (para exibir progresso e erros caso falhe)
+  if ! curl -L --fail --output "$ZIP_PATH" "$DOWNLOAD_URL"; then
+    fail "Falha no download via curl do arquivo ${ZIP_NAME} a partir de ${DOWNLOAD_URL}."
+    exit 1
+  fi
+elif command -v wget >/dev/null 2>&1; then
+  if ! wget -O "$ZIP_PATH" "$DOWNLOAD_URL"; then
+    fail "Falha no download via wget do arquivo ${ZIP_NAME} a partir de ${DOWNLOAD_URL}."
+    exit 1
+  fi
 else
-  wget -qO "$ZIP_PATH" "$DOWNLOAD_URL"
+  fail "Nem curl nem wget estão disponíveis no sistema. Instale um dos dois e tente novamente."
+  exit 1
 fi
 
 if [ ! -s "$ZIP_PATH" ]; then
-  fail "Falha ao baixar o arquivo ${ZIP_NAME}."
-  rm -rf "$TMP_DIR"
+  fail "O arquivo baixado ${ZIP_NAME} está vazio ou não existe."
   exit 1
 fi
-ok "Download concluído."
+ok "Download concluído com sucesso."
 
 # -----------------------------------------------------------------------------
-#  Extrai o binário para a pasta pb/
+#  Extrai o binário na pasta pb/
 # -----------------------------------------------------------------------------
-info "Extraindo binário..."
+info "Extraindo binário em ${PB_DIR}..."
 if ! command -v unzip >/dev/null 2>&1; then
-  fail "Comando 'unzip' não encontrado. Instale-o (ex.: 'apt install unzip' ou 'brew install unzip')."
-  rm -rf "$TMP_DIR"
+  fail "Comando 'unzip' não encontrado. Instale-o (ex.: 'brew install unzip' no macOS ou 'apt install unzip' no Linux)."
   exit 1
 fi
 
-unzip -o -q "$ZIP_PATH" -d "$TMP_DIR"
-
-# Move o binário para pb/
-if [ -f "${TMP_DIR}/${PB_BIN_NAME}" ]; then
-  mv -f "${TMP_DIR}/${PB_BIN_NAME}" "${PB_DIR}/${PB_BIN_NAME}"
-  chmod +x "${PB_DIR}/${PB_BIN_NAME}"
-  ok "Binário instalado em: ${PB_DIR}/${PB_BIN_NAME}"
-else
-  fail "Binário '${PB_BIN_NAME}' não encontrado dentro do zip."
-  fail "Conteúdo extraído:"
-  ls -la "$TMP_DIR" | sed 's/^/      /' >&2 || true
-  rm -rf "$TMP_DIR"
+if ! unzip -o -q "$ZIP_PATH" -d "$PB_DIR"; then
+  fail "Falha ao descompactar o arquivo ${ZIP_PATH}."
   exit 1
 fi
 
-rm -rf "$TMP_DIR"
+# Remove arquivos auxiliares que o zip do PocketBase traz (LICENSE.md, CHANGELOG.md), se existirem
+rm -f "${PB_DIR}/LICENSE.md" "${PB_DIR}/CHANGELOG.md" 2>/dev/null || true
+
+# Remove o arquivo ZIP após extrair com sucesso
+rm -f "$ZIP_PATH"
+trap - EXIT
+
+# -----------------------------------------------------------------------------
+#  Valida que o binário baixado existe e é executável
+# -----------------------------------------------------------------------------
+TARGET_BIN="${PB_DIR}/${PB_BIN_NAME}"
+
+if [ ! -f "$TARGET_BIN" ]; then
+  fail "Binário '${PB_BIN_NAME}' não foi encontrado em ${PB_DIR} após extração."
+  fail "Conteúdo atual de ${PB_DIR}:"
+  ls -la "$PB_DIR" | sed 's/^/      /' >&2 || true
+  exit 1
+fi
+
+chmod +x "$TARGET_BIN"
+
+if [ ! -x "$TARGET_BIN" ]; then
+  fail "Não foi possível dar permissão de execução ao binário: ${TARGET_BIN}"
+  exit 1
+fi
+
+ok "Binário validado e executável: ${TARGET_BIN}"
+
+# Teste rápido de versão se possível (PocketBase suporta flag --version ou -v ou simplesmente existe)
+if "$TARGET_BIN" --version >/dev/null 2>&1; then
+  INSTALLED_VERSION="$("$TARGET_BIN" --version 2>&1 || true)"
+  ok "Binário PocketBase funcional (${INSTALLED_VERSION})"
+fi
 
 # -----------------------------------------------------------------------------
 #  Cria o diretório pb_data se não existir
@@ -236,7 +285,7 @@ ok ".env ajustado: VITE_POCKETBASE_URL=${LOCAL_URL}"
   && info "URL anterior preservada como comentário: ${OLD_URL}"
 
 # ----------------------------------------------------------------------------
-#  Garante que pb_data/ e o binário estejam no .gitignore
+#  Garante que pb/, pb_data/ e o binário estejam no .gitignore
 # ----------------------------------------------------------------------------
 GITIGNORE="${PROJECT_ROOT}/.gitignore"
 ensure_gitignore() {
@@ -245,19 +294,20 @@ ensure_gitignore() {
   grep -q "^${entry}\$" "$GITIGNORE" 2>/dev/null && return 0
   printf "%s\n" "$entry" >> "$GITIGNORE"
 }
+ensure_gitignore "pb/"
 ensure_gitignore "/pb/"
 ensure_gitignore "pb_data/"
 ensure_gitignore "/pb_data/"
 ensure_gitignore "pocketbase"
 ensure_gitignore "pocketbase.exe"
-ok ".gitignore verificado (/pb/, pb_data/ e binário pocketbase)"
+ok ".gitignore verificado (pb/, pb_data/ e binário pocketbase)"
 
 # -----------------------------------------------------------------------------
 #  Instruções finais
 # -----------------------------------------------------------------------------
 cat <<EOF
 
-${C_BOLD}${C_GREEN}Tudo pronto!${C_RESET} O PocketBase ${PB_VERSION} (${PLATFORM}) está instalado.
+${C_BOLD}${C_GREEN}Tudo pronto!${C_RESET} O PocketBase ${PB_VERSION} (${PLATFORM}) está instalado com sucesso em ${TARGET_BIN}.
 
 ${C_BOLD}Como rodar o ambiente local${C_RESET}
 
@@ -270,17 +320,18 @@ ${C_BOLD}Como rodar o ambiente local${C_RESET}
   3) Acesse o painel de admin do PocketBase:
        ${C_CYAN}http://localhost:8090/_/${C_RESET}
 
-     Na primeira execução, crie uma conta de superusuário pelo admin UI.
+     Na primeira execução, crie uma conta de superusuário pelo admin UI se desejar.
 
-${C_BOLD}Variável de ambiente${C_RESET}
+${C_BOLD}Variável de ambiente configurada${C_RESET}
   VITE_POCKETBASE_URL=${LOCAL_URL}
 
   Se você alternar entre o ambiente local e o de produção (Skip Cloud),
   edite o .env e troque a URL conforme necessário.
 
 ${C_BOLD}Observações${C_RESET}
+  - Executável do PocketBase: ${C_CYAN}./pb/pocketbase${C_RESET}
   - Os dados locais ficam em ${PROJECT_ROOT}/pb_data/
-  - Para parar o PocketBase: Ctrl+C no terminal onde ele está rodando
-  - Para atualizar o binário no futuro: rode novamente ${C_CYAN}./scripts/setup-local.sh${C_RESET}
+  - Para parar o PocketBase: pressione Ctrl+C no terminal onde ele está rodando
+  - Para atualizar o binário no futuro: execute novamente ${C_CYAN}bash scripts/setup-local.sh${C_RESET}
 
 EOF

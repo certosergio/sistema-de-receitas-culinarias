@@ -22,7 +22,7 @@ git pull
 ### 2. Baixar o binário do PocketBase (se ainda não baixado)
 Execute na raiz do projeto:
 ```bash
-./scripts/setup-local.sh
+bash scripts/setup-local.sh
 ```
 O script baixa o binário compatível com seu SO para a pasta `pb/` e ajusta seu `.env` para `VITE_POCKETBASE_URL=http://localhost:8090`.
 

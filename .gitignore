@@ -47,6 +47,7 @@ screenshot.png
 !.env
 
 # PocketBase local (binário + dados)
+pb/
 /pb/
 pb_data/
 /pb_data/

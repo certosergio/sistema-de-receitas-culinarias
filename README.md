@@ -33,7 +33,7 @@ PocketBase e configura o ambiente automaticamente.
 
 ```bash
 # 1. Configura o PocketBase local (baixa o binário para pb/, cria pb_data e ajusta .env)
-./scripts/setup-local.sh
+bash scripts/setup-local.sh
 
 # 2. Em um terminal, suba o PocketBase apontando para as migrations e hooks em server/:
 ./pb/pocketbase serve --migrationsDir=server/migrations --hooksDir=server/hooks
