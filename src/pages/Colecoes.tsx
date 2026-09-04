@@ -17,6 +17,7 @@ import {
   deleteCollection,
   CollectionWithCount,
 } from '@/services/collections'
+import { getErrorMessage, extractFieldErrors } from '@/lib/pocketbase/errors'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -113,33 +114,38 @@ const Colecoes: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) {
+    const trimmedName = name.trim()
+    if (!trimmedName) {
       setNameError('O nome da coleção é obrigatório')
       return
     }
+
     setSaving(true)
     try {
       if (editing) {
-        await updateCollection(editing.id, { name, description })
+        await updateCollection(editing.id, { name: trimmedName, description: description.trim() })
         toast({
           title: 'Coleção atualizada',
-          description: `A coleção "${name}" foi atualizada com sucesso.`,
+          description: `A coleção "${trimmedName}" foi atualizada com sucesso.`,
         })
       } else {
-        await createCollection({ name, description })
+        await createCollection({ name: trimmedName, description: description.trim() })
         toast({
           title: 'Coleção criada',
-          description: `A coleção "${name}" foi criada.`,
+          description: `A coleção "${trimmedName}" foi criada.`,
         })
       }
       setModalOpen(false)
       load()
     } catch (err: unknown) {
       console.error('Erro ao salvar coleção:', err)
-      const errorObj = err as { message?: string }
+      const fieldErrors = extractFieldErrors(err)
+      if (fieldErrors.name) {
+        setNameError(fieldErrors.name)
+      }
       toast({
-        title: 'Falha ao salvar',
-        description: errorObj?.message || 'Erro ao processar solicitação.',
+        title: 'Falha ao salvar coleção',
+        description: getErrorMessage(err, 'Não foi possível salvar a coleção. Tente novamente.'),
         variant: 'destructive',
       })
     } finally {
@@ -165,10 +171,9 @@ const Colecoes: React.FC = () => {
       load()
     } catch (err: unknown) {
       console.error('Erro ao excluir coleção:', err)
-      const errorObj = err as { message?: string }
       toast({
-        title: 'Erro ao excluir',
-        description: errorObj?.message || 'Não foi possível excluir a coleção.',
+        title: 'Erro ao excluir coleção',
+        description: getErrorMessage(err, 'Não foi possível excluir a coleção.'),
         variant: 'destructive',
       })
     } finally {

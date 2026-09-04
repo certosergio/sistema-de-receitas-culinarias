@@ -8,6 +8,7 @@ import {
 } from '@/services/categories'
 import { getRecipes } from '@/services/recipes'
 import { Category, Recipe } from '@/types'
+import { getErrorMessage, extractFieldErrors } from '@/lib/pocketbase/errors'
 import {
   FolderTree,
   Plus,
@@ -138,7 +139,8 @@ const Categories: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) {
+    const trimmedName = name.trim()
+    if (!trimmedName) {
       setNameError('O nome da categoria é obrigatório')
       return
     }
@@ -147,33 +149,44 @@ const Categories: React.FC = () => {
     try {
       if (editingCategory) {
         await updateCategory(editingCategory.id, {
-          name: name.trim(),
+          name: trimmedName,
           description: description.trim(),
           color,
         })
         toast({
           title: 'Categoria atualizada',
-          description: `A categoria "${name}" foi atualizada com sucesso.`,
+          description: `A categoria "${trimmedName}" foi atualizada com sucesso.`,
         })
       } else {
         await createCategory({
-          name: name.trim(),
+          name: trimmedName,
           description: description.trim(),
           color,
         })
         toast({
           title: 'Categoria criada',
-          description: `A categoria "${name}" foi adicionada ao acervo.`,
+          description: `A categoria "${trimmedName}" foi adicionada ao acervo.`,
         })
       }
       setModalOpen(false)
       loadData()
     } catch (err: unknown) {
       console.error('Erro ao salvar categoria:', err)
-      const errorObj = err as { message?: string }
+      const fieldErrors = extractFieldErrors(err)
+      if (fieldErrors.name) {
+        setNameError(fieldErrors.name)
+      } else if (fieldErrors.slug) {
+        setNameError('Já existe uma categoria cadastrada com este nome ou identificador.')
+      }
+
+      const friendlyMsg = getErrorMessage(
+        err,
+        'Não foi possível salvar a categoria. Verifique as informações e tente novamente.',
+      )
+
       toast({
-        title: 'Falha ao salvar',
-        description: errorObj?.message || 'Erro ao processar solicitação.',
+        title: 'Falha ao salvar categoria',
+        description: friendlyMsg,
         variant: 'destructive',
       })
     } finally {
@@ -208,10 +221,9 @@ const Categories: React.FC = () => {
       loadData()
     } catch (err: unknown) {
       console.error('Erro ao excluir categoria:', err)
-      const errorObj = err as { message?: string }
       toast({
-        title: 'Erro ao excluir',
-        description: errorObj?.message || 'Não foi possível excluir a categoria.',
+        title: 'Erro ao excluir categoria',
+        description: getErrorMessage(err, 'Não foi possível excluir a categoria selecionada.'),
         variant: 'destructive',
       })
     } finally {

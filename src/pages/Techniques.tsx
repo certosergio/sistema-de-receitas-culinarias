@@ -8,6 +8,7 @@ import {
 } from '@/services/techniques'
 import { getRecipes } from '@/services/recipes'
 import { Technique, Recipe } from '@/types'
+import { getErrorMessage, extractFieldErrors } from '@/lib/pocketbase/errors'
 import {
   Flame,
   Plus,
@@ -132,7 +133,8 @@ const Techniques: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) {
+    const trimmedName = name.trim()
+    if (!trimmedName) {
       setNameError('O nome da técnica é obrigatório')
       return
     }
@@ -141,31 +143,42 @@ const Techniques: React.FC = () => {
     try {
       if (editingTechnique) {
         await updateTechnique(editingTechnique.id, {
-          name: name.trim(),
+          name: trimmedName,
           description: description.trim(),
         })
         toast({
           title: 'Técnica atualizada',
-          description: `A técnica "${name}" foi atualizada com sucesso.`,
+          description: `A técnica "${trimmedName}" foi atualizada com sucesso.`,
         })
       } else {
         await createTechnique({
-          name: name.trim(),
+          name: trimmedName,
           description: description.trim(),
         })
         toast({
           title: 'Técnica criada',
-          description: `A técnica "${name}" foi adicionada ao acervo.`,
+          description: `A técnica "${trimmedName}" foi adicionada ao acervo.`,
         })
       }
       setModalOpen(false)
       loadData()
     } catch (err: unknown) {
       console.error('Erro ao salvar técnica:', err)
-      const errorObj = err as { message?: string }
+      const fieldErrors = extractFieldErrors(err)
+      if (fieldErrors.name) {
+        setNameError(fieldErrors.name)
+      } else if (fieldErrors.slug) {
+        setNameError('Já existe uma técnica cadastrada com este nome ou identificador.')
+      }
+
+      const friendlyMsg = getErrorMessage(
+        err,
+        'Não foi possível salvar a técnica. Verifique as informações e tente novamente.',
+      )
+
       toast({
-        title: 'Falha ao salvar',
-        description: errorObj?.message || 'Erro ao processar solicitação.',
+        title: 'Falha ao salvar técnica',
+        description: friendlyMsg,
         variant: 'destructive',
       })
     } finally {
@@ -200,10 +213,9 @@ const Techniques: React.FC = () => {
       loadData()
     } catch (err: unknown) {
       console.error('Erro ao excluir técnica:', err)
-      const errorObj = err as { message?: string }
       toast({
-        title: 'Erro ao excluir',
-        description: errorObj?.message || 'Não foi possível excluir a técnica.',
+        title: 'Erro ao excluir técnica',
+        description: getErrorMessage(err, 'Não foi possível excluir a técnica selecionada.'),
         variant: 'destructive',
       })
     } finally {

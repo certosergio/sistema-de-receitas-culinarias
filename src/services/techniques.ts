@@ -20,30 +20,67 @@ export async function getTechniqueBySlug(slug: string): Promise<Technique | null
   }
 }
 
+function generateBaseSlug(name: string): string {
+  const base = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+  return base || 'tecnica'
+}
+
 export async function createTechnique(data: {
   name: string
   slug?: string
   description?: string
 }): Promise<Technique> {
-  const slug =
-    data.slug ||
-    data.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-  return await pb.collection('techniques').create<Technique>({
-    ...data,
-    slug,
-  })
+  const baseSlug = data.slug?.trim() || generateBaseSlug(data.name)
+
+  try {
+    return await pb.collection('techniques').create<Technique>({
+      name: data.name.trim(),
+      description: data.description?.trim() || '',
+      slug: baseSlug,
+    })
+  } catch (err: unknown) {
+    const errObj = err as { response?: { data?: Record<string, unknown> }; message?: string }
+    const isSlugCollision =
+      errObj?.response?.data?.slug !== undefined ||
+      (errObj?.message && /slug|unique|Failed to create record/i.test(errObj.message))
+
+    if (isSlugCollision) {
+      const uniqueSuffix = Math.random().toString(36).substring(2, 7)
+      const fallbackSlug = `${baseSlug}-${uniqueSuffix}`
+      return await pb.collection('techniques').create<Technique>({
+        name: data.name.trim(),
+        description: data.description?.trim() || '',
+        slug: fallbackSlug,
+      })
+    }
+    throw err
+  }
 }
 
 export async function updateTechnique(
   id: string,
   data: { name?: string; slug?: string; description?: string },
 ): Promise<Technique> {
-  return await pb.collection('techniques').update<Technique>(id, data)
+  const payload: { name?: string; slug?: string; description?: string } = {}
+  if (data.name !== undefined) payload.name = data.name.trim()
+  if (data.description !== undefined) payload.description = data.description.trim()
+  if (data.slug !== undefined) payload.slug = data.slug.trim()
+
+  try {
+    return await pb.collection('techniques').update<Technique>(id, payload)
+  } catch (err: unknown) {
+    const errObj = err as { response?: { data?: Record<string, unknown> } }
+    if (errObj?.response?.data?.slug && payload.slug) {
+      delete payload.slug
+      return await pb.collection('techniques').update<Technique>(id, payload)
+    }
+    throw err
+  }
 }
 
 export async function deleteTechnique(id: string): Promise<boolean> {
