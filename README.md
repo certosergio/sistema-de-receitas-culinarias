@@ -32,11 +32,11 @@ Skip Cloud. Para rodar tudo na sua máquina, há um script que baixa o binário 
 PocketBase e configura o ambiente automaticamente.
 
 ```bash
-# 1. Configura o PocketBase local (baixa binário, cria pb_data, ajusta .env)
+# 1. Configura o PocketBase local (baixa o binário para pb/, cria pb_data e ajusta .env)
 ./scripts/setup-local.sh
 
-# 2. Em um terminal, suba o PocketBase na porta 8090
-./pocketbase serve
+# 2. Em um terminal, suba o PocketBase apontando para as migrations e hooks em server/:
+./pb/pocketbase serve --migrationsDir=server/migrations --hooksDir=server/hooks
 
 # 3. Em outro terminal, suba o frontend
 npm run dev
@@ -44,14 +44,15 @@ npm run dev
 
 - **App:** http://localhost:5173
 - **Admin do PocketBase:** http://localhost:8090/_/ — na primeira execução,
-  crie uma conta de superusuário pelo painel.
+  crie uma conta de superusuário pelo painel se desejar.
+- **Usuário pré-semeado no seed:** `certosergio@gmail.com` / senha: `Skip@Pass`
 - **`.env`:** para desenvolvimento local, use
   `VITE_POCKETBASE_URL=http://localhost:8090`. O script cuida disso
   automaticamente; para voltar à instância do Skip Cloud, ajuste a variável no
   `.env` conforme necessário.
 
-> Os dados locais ficam em `pb_data/`. O binário `pocketbase` e a pasta
-> `pb_data/` já estão no `.gitignore`.
+> As migrations de schema e seed ficam em `server/migrations/` e os hooks em `server/hooks/`.
+> Os dados locais ficam em `pb_data/` e o executável em `pb/` (ambos ignorados no `.gitignore`).
 
 ## 💻 Scripts Disponíveis
 

@@ -2,14 +2,14 @@
 # ===========================================================================
 #  setup-local.sh
 # --------------------------------------------------------------------------
-#  Baixa e instala o binário do PocketBase na raiz do projeto para
+#  Baixa e instala o binário do PocketBase na pasta pb/ para
 #  desenvolvimento local, cria a pasta pb_data e configura o .env.
 #
 #  Uso:
 #    ./scripts/setup-local.sh
 #
 #  Depois de rodar este script:
-#    1) Em um terminal:    ./pocketbase serve
+#    1) Em um terminal:    ./pb/pocketbase serve --migrationsDir=server/migrations --hooksDir=server/hooks
 #    2) Em outro terminal: npm run dev
 #    3) Admin do PocketBase: http://localhost:8090/_/
 # ===========================================================================
@@ -42,6 +42,9 @@ fail()  { printf "${C_RED}✗${C_RESET} %s\n" "$*" >&2; }
 # Diretório raiz do projeto (pai de scripts/)
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
+
+PB_DIR="${PROJECT_ROOT}/pb"
+mkdir -p "$PB_DIR"
 
 info "Diretório do projeto: ${PROJECT_ROOT}"
 
@@ -156,7 +159,7 @@ fi
 ok "Download concluído."
 
 # -----------------------------------------------------------------------------
-#  Extrai o binário para a raiz do projeto
+#  Extrai o binário para a pasta pb/
 # -----------------------------------------------------------------------------
 info "Extraindo binário..."
 if ! command -v unzip >/dev/null 2>&1; then
@@ -167,11 +170,11 @@ fi
 
 unzip -o -q "$ZIP_PATH" -d "$TMP_DIR"
 
-# Move o binário para a raiz do projeto
+# Move o binário para pb/
 if [ -f "${TMP_DIR}/${PB_BIN_NAME}" ]; then
-  mv -f "${TMP_DIR}/${PB_BIN_NAME}" "${PROJECT_ROOT}/${PB_BIN_NAME}"
-  chmod +x "${PROJECT_ROOT}/${PB_BIN_NAME}"
-  ok "Binário instalado em: ${PROJECT_ROOT}/${PB_BIN_NAME}"
+  mv -f "${TMP_DIR}/${PB_BIN_NAME}" "${PB_DIR}/${PB_BIN_NAME}"
+  chmod +x "${PB_DIR}/${PB_BIN_NAME}"
+  ok "Binário instalado em: ${PB_DIR}/${PB_BIN_NAME}"
 else
   fail "Binário '${PB_BIN_NAME}' não encontrado dentro do zip."
   fail "Conteúdo extraído:"
@@ -242,10 +245,12 @@ ensure_gitignore() {
   grep -q "^${entry}\$" "$GITIGNORE" 2>/dev/null && return 0
   printf "%s\n" "$entry" >> "$GITIGNORE"
 }
-ensure_gitignore "pb_data"
-ensure_gitignore "/pocketbase"
-ensure_gitignore "/pocketbase.exe"
-ok ".gitignore verificado (pb_data/ e binário pocketbase)"
+ensure_gitignore "/pb/"
+ensure_gitignore "pb_data/"
+ensure_gitignore "/pb_data/"
+ensure_gitignore "pocketbase"
+ensure_gitignore "pocketbase.exe"
+ok ".gitignore verificado (/pb/, pb_data/ e binário pocketbase)"
 
 # -----------------------------------------------------------------------------
 #  Instruções finais
@@ -257,7 +262,7 @@ ${C_BOLD}${C_GREEN}Tudo pronto!${C_RESET} O PocketBase ${PB_VERSION} (${PLATFORM
 ${C_BOLD}Como rodar o ambiente local${C_RESET}
 
   1) Inicie o PocketBase (em um terminal):
-       ${C_CYAN}./pocketbase serve${C_RESET}
+       ${C_CYAN}./pb/pocketbase serve --migrationsDir=server/migrations --hooksDir=server/hooks${C_RESET}
 
   2) Inicie o frontend (em outro terminal):
        ${C_CYAN}npm run dev${C_RESET}
