@@ -46,13 +46,11 @@ screenshot.png
 .env*
 !.env
 
-# PocketBase local (binário + dados)
-pb/
+# PocketBase local (binário + dados ancorados na raiz)
 /pb/
-pb_data/
 /pb_data/
-pocketbase
-pocketbase.exe
+/pocketbase
+/pocketbase.exe
 
 # Linux kernel core dumps (e.g. when oxfmt or pnpm crash)
 core.[0-9]*
