@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T13:38:29.714Z",
+  "generatedAt": "2026-09-04T13:50:30.559Z",
   "collections": [
     {
       "name": "users",
@@ -806,6 +806,47 @@
         "CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients (ingredient_id)",
         "CREATE INDEX idx_recipe_ingredients_user ON recipe_ingredients (user)"
       ]
+    },
+    {
+      "name": "user_settings",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "cost_limit_per_portion",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_user_settings_user ON user_settings (user)"]
     }
   ]
 }

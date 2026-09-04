@@ -21,6 +21,17 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { CostAlertBadge } from '@/components/CostAlertBadge'
+import { useSettings } from '@/contexts/SettingsContext'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { toast } from '@/hooks/use-toast'
 
 interface RecipeCostRow {
   recipe: Recipe
@@ -35,9 +46,13 @@ type SortDirection = 'asc' | 'desc'
 
 export const RelatorioCustos: React.FC = () => {
   const navigate = useNavigate()
+  const { costLimitPerPortion, updateCostLimit } = useSettings()
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [allLinked, setAllLinked] = useState<RecipeIngredient[]>([])
   const [loading, setLoading] = useState(true)
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false)
+  const [limitInputValue, setLimitInputValue] = useState('')
+  const [savingLimit, setSavingLimit] = useState(false)
   const [search, setSearch] = useState('')
   const [sortColumn, setSortColumn] = useState<SortColumn>('totalCost')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -156,6 +171,54 @@ export const RelatorioCustos: React.FC = () => {
     return receitasComCusto > 0 ? totalGeral / receitasComCusto : 0
   }, [totalGeral, receitasComCusto])
 
+  // Contagem de receitas acima do teto de custo
+  const receitasAcimaDoTeto = useMemo(() => {
+    if (costLimitPerPortion === null || costLimitPerPortion <= 0) return 0
+    return sortedRows.filter(
+      (r) => r.costPerPortion !== null && r.costPerPortion > costLimitPerPortion,
+    ).length
+  }, [sortedRows, costLimitPerPortion])
+
+  const openLimitModal = () => {
+    setLimitInputValue(
+      costLimitPerPortion !== null && costLimitPerPortion > 0 ? String(costLimitPerPortion) : '',
+    )
+    setLimitDialogOpen(true)
+  }
+
+  const handleSaveLimit = async () => {
+    try {
+      setSavingLimit(true)
+      const num = limitInputValue.trim() ? parseFloat(limitInputValue.replace(',', '.')) : null
+      if (num !== null && (isNaN(num) || num < 0)) {
+        toast({
+          title: 'Valor inválido',
+          description: 'Informe um valor numérico positivo para o limite de custo.',
+          variant: 'destructive',
+        })
+        return
+      }
+      await updateCostLimit(num)
+      toast({
+        title: 'Meta de custo atualizada',
+        description:
+          num !== null
+            ? `Limite definido em ${formatBRL(num)} por porção.`
+            : 'Limite de custo removido com sucesso.',
+      })
+      setLimitDialogOpen(false)
+    } catch (err) {
+      console.error('Erro ao salvar meta de custo:', err)
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar o limite de custo. Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingLimit(false)
+    }
+  }
+
   const handleSort = (col: SortColumn) => {
     if (sortColumn === col) {
       setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
@@ -184,17 +247,28 @@ export const RelatorioCustos: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            onClick={openLimitModal}
+            variant="outline"
+            className="border-bronze/50 text-bronze hover:bg-bronze-subtle rounded-xl text-xs px-3.5 py-4 font-semibold"
+          >
+            {costLimitPerPortion !== null && costLimitPerPortion > 0 ? (
+              <span>Teto: {formatBRL(costLimitPerPortion)}/porção</span>
+            ) : (
+              <span>Definir Teto de Custo</span>
+            )}
+          </Button>
           <Button
             onClick={() => navigate('/ingredientes')}
             variant="outline"
-            className="border-bronze/40 text-bronze hover:bg-bronze-subtle rounded-xl text-xs px-4 py-5 font-semibold"
+            className="border-marfim-border bg-white text-tinta hover:bg-marfim-card rounded-xl text-xs px-3.5 py-4 font-semibold shadow-xs"
           >
-            Gerenciar Preços de Insumos
+            Gerenciar Insumos
           </Button>
           <Button
             onClick={() => navigate('/receitas/nova')}
-            className="bg-bronze hover:bg-bronze-hover text-white shadow-md rounded-xl text-xs px-4 py-5 gap-2"
+            className="bg-bronze hover:bg-bronze-hover text-white shadow-md rounded-xl text-xs px-4 py-4 gap-2"
           >
             <Plus className="w-4 h-4" />
             <span>+ Nova Receita</span>
@@ -240,23 +314,46 @@ export const RelatorioCustos: React.FC = () => {
           </p>
         </div>
 
-        {/* Cobertura de Vínculos */}
+        {/* Cobertura de Vínculos & Meta de Custo */}
         <div className="bg-white rounded-2xl p-5 border border-marfim-border shadow-xs space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] uppercase tracking-wider text-tinta-ter font-semibold">
-              Cobertura de Fichas
+              {costLimitPerPortion !== null && costLimitPerPortion > 0
+                ? 'Status do Teto'
+                : 'Cobertura de Fichas'}
             </span>
             <div className="w-8 h-8 rounded-full bg-verde-subtle text-verde flex items-center justify-center">
               <Percent className="w-4 h-4" />
             </div>
           </div>
           <div className="font-serif text-2xl sm:text-3xl font-bold text-tinta font-mono">
-            {recipes.length > 0
-              ? `${Math.round((receitasComCusto / recipes.length) * 100)}%`
-              : '0%'}
+            {costLimitPerPortion !== null && costLimitPerPortion > 0 ? (
+              <span className={receitasAcimaDoTeto > 0 ? 'text-rose-700' : 'text-emerald-700'}>
+                {receitasAcimaDoTeto}{' '}
+                <span className="text-sm font-sans font-normal text-tinta-sec">
+                  {receitasAcimaDoTeto === 1 ? 'acima do teto' : 'acima do teto'}
+                </span>
+              </span>
+            ) : recipes.length > 0 ? (
+              `${Math.round((receitasComCusto / recipes.length) * 100)}%`
+            ) : (
+              '0%'
+            )}
           </div>
-          <p className="text-xs text-tinta-sec">
-            {receitasComCusto} de {recipes.length} receitas vinculadas a insumos
+          <p className="text-xs text-tinta-sec flex items-center justify-between">
+            {costLimitPerPortion !== null && costLimitPerPortion > 0 ? (
+              <span>Teto: {formatBRL(costLimitPerPortion)} / porção</span>
+            ) : (
+              <span>
+                {receitasComCusto} de {recipes.length} receitas com insumos
+              </span>
+            )}
+            <button
+              onClick={openLimitModal}
+              className="text-bronze hover:underline font-medium ml-2"
+            >
+              {costLimitPerPortion !== null && costLimitPerPortion > 0 ? 'Ajustar' : 'Configurar'}
+            </button>
           </p>
         </div>
       </div>
@@ -432,11 +529,30 @@ export const RelatorioCustos: React.FC = () => {
                       </td>
 
                       {/* Custo por porção */}
-                      <td className="py-3.5 px-4 text-right font-mono text-xs text-tinta-sec">
+                      <td className="py-3.5 px-4 text-right">
                         {row.costPerPortion !== null && row.costPerPortion > 0 ? (
-                          formatBRL(row.costPerPortion)
+                          <div className="flex flex-col items-end gap-1">
+                            <span
+                              className={`font-mono text-xs font-semibold ${
+                                costLimitPerPortion !== null &&
+                                costLimitPerPortion > 0 &&
+                                row.costPerPortion > costLimitPerPortion
+                                  ? 'text-rose-700'
+                                  : 'text-tinta'
+                              }`}
+                            >
+                              {formatBRL(row.costPerPortion)}
+                            </span>
+                            <CostAlertBadge
+                              costPerPortion={row.costPerPortion}
+                              limit={costLimitPerPortion}
+                              size="sm"
+                              showStatusText={false}
+                              onConfigureClick={openLimitModal}
+                            />
+                          </div>
                         ) : (
-                          <span className="text-tinta-ter">—</span>
+                          <span className="text-tinta-ter text-xs font-mono">—</span>
                         )}
                       </td>
 
@@ -485,6 +601,87 @@ export const RelatorioCustos: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* MODAL CONFIGURAÇÃO DO LIMITE DE CUSTO */}
+      <Dialog open={limitDialogOpen} onOpenChange={setLimitDialogOpen}>
+        <DialogContent className="bg-white rounded-2xl border-marfim-border sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-tinta">
+              Meta de Custo por Porção
+            </DialogTitle>
+            <DialogDescription className="text-tinta-sec text-xs leading-relaxed">
+              Defina um valor teto por porção para destacar automaticamente receitas com custo acima
+              da meta no relatório, nos cards do acervo e na ficha técnica.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-3">
+            <label className="text-xs font-semibold text-tinta block">
+              Limite máximo desejado por porção (R$)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-tinta-ter font-mono text-sm">
+                R$
+              </span>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Ex: 15.50"
+                value={limitInputValue}
+                onChange={(e) => setLimitInputValue(e.target.value)}
+                className="pl-11 h-11 bg-white border-marfim-border rounded-xl font-mono text-sm focus-visible:ring-verde"
+              />
+            </div>
+            <p className="text-[11px] text-tinta-ter italic">
+              Deixe em branco para remover o limite e desativar os alertas.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            {costLimitPerPortion !== null && (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={savingLimit}
+                onClick={async () => {
+                  try {
+                    setSavingLimit(true)
+                    await updateCostLimit(null)
+                    setLimitDialogOpen(false)
+                    toast({
+                      title: 'Limite removido',
+                      description: 'Os alertas de custo foram desativados.',
+                    })
+                  } finally {
+                    setSavingLimit(false)
+                  }
+                }}
+                className="text-xs text-tinta-ter hover:text-rose-600 rounded-xl"
+              >
+                Remover limite
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={savingLimit}
+              onClick={() => setLimitDialogOpen(false)}
+              className="rounded-xl text-xs"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={savingLimit}
+              onClick={handleSaveLimit}
+              className="bg-verde hover:bg-verde-hover text-white rounded-xl text-xs px-4"
+            >
+              {savingLimit ? 'Salvando...' : 'Salvar meta'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

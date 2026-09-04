@@ -7,6 +7,9 @@ Esta pasta contém as definições do backend (schema, seed e endpoints customiz
 - `migrations/`:
   - `0001_bootstrap_schema.js`: Criação das coleções (`categories`, `techniques`, `recipes`, `favorites`, `collections`, `collection_recipes`, `selected_recipes`), seus campos, regras de acesso (RLS) e índices únicos/secundários de forma idempotente.
   - `0002_seed_initial_data.js`: Carga dos dados iniciais reais (usuário `certosergio@gmail.com`, 10 categorias, 11 técnicas, 16 receitas completas, coleção "Para imprimir", 5 receitas na coleção e 5 receitas selecionadas). Idempotente.
+  - `0003_ingredient_categories_and_ingredients.js`: Criação das coleções `ingredient_categories` e `ingredients` com seus campos, regras e índices.
+  - `0004_recipe_ingredients.js`: Criação da coleção `recipe_ingredients` para vínculo de insumos a receitas.
+  - `0005_user_settings.js`: Criação da coleção `user_settings` para persistência das preferências do usuário (como o limite teto de custo por porção para alertas).
 - `hooks/`:
   - `share_collection.js`: Rota pública `GET /api/share/:token` para compartilhamento de coleções sem exigir autenticação.
 

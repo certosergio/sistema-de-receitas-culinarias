@@ -20,37 +20,37 @@ export function extractFieldErrors(error: unknown): FieldErrors {
   return errors
 }
 
-export function isDuplicateError(err: unknown, fieldName?: string): boolean {
-  if (err instanceof ClientResponseError) {
-    if (err.status === 400) {
-      const data = err.response?.data
-      if (fieldName && data && typeof data === 'object') {
-        const fieldError = (data as Record<string, { code?: string; message?: string }>)[fieldName]
-        if (
-          fieldError &&
-          (fieldError.code === 'validation_not_unique' || /unique/i.test(fieldError.message || ''))
-        ) {
-          return true
-        }
-      }
-      return (
-        err.response?.message?.includes('UNIQUE constraint failed') ||
-        err.message?.includes('UNIQUE constraint failed') ||
-        false
-      )
-    }
-  }
-  const msg = (err as Error)?.message || ''
-  return /unique|duplicate|já existe/i.test(msg)
-}
-
 export function getErrorMessage(
   error: unknown,
-  fallback: string = 'Ocorreu um erro inesperado.',
+  fallback: string = 'An unexpected error occurred.',
 ): string {
   if (!(error instanceof ClientResponseError)) {
     return error instanceof Error ? error.message : fallback
   }
   const msgs = Object.values(extractFieldErrors(error))
   return msgs.length > 0 ? msgs.join(' ') : error.message || fallback
+}
+
+export function isDuplicateError(error: unknown, fieldName?: string): boolean {
+  if (error instanceof ClientResponseError) {
+    const data = error.response?.data
+    if (data && typeof data === 'object') {
+      if (fieldName) {
+        const fieldErr = (data as Record<string, unknown>)[fieldName]
+        if (fieldErr) {
+          const msg =
+            typeof fieldErr === 'object' && fieldErr && 'message' in fieldErr
+              ? String((fieldErr as { message: unknown }).message)
+              : String(fieldErr)
+          if (/unique|exist|duplicate|já existe/i.test(msg)) return true
+        }
+      } else {
+        const allMsg = JSON.stringify(data)
+        if (/unique|exist|duplicate|já existe/i.test(allMsg)) return true
+      }
+    }
+    if (/unique|exist|duplicate|já existe/i.test(error.message)) return true
+  }
+  const msg = error instanceof Error ? error.message : String(error)
+  return /unique|exist|duplicate|já existe/i.test(msg)
 }

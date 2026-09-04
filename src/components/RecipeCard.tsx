@@ -4,19 +4,28 @@ import { Recipe } from '@/types'
 import { getRecipeCoverUrl, isRecipeComplete } from '@/services/recipes'
 import { RecipePlaceholder } from './RecipePlaceholder'
 import { RecipeActions } from './RecipeActions'
-import { formatBRL } from '@/lib/recipeUtils'
+import { formatBRL, recipeCostPerPortion } from '@/lib/recipeUtils'
 import { Clock, Users, Award, ChefHat, DollarSign } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { RecipeCardDietary } from './RecipeCardDietary'
 import { SelectionToggle } from './SelectionToggle'
+import { CostAlertBadge } from './CostAlertBadge'
+import { useSettings } from '@/contexts/SettingsContext'
 
 interface RecipeCardProps {
   recipe: Recipe
 }
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
+  const { costLimitPerPortion } = useSettings()
   const coverUrl = getRecipeCoverUrl(recipe)
   const isComplete = isRecipeComplete(recipe)
+  const perPortion = recipeCostPerPortion(recipe)
+  const isExceeded =
+    costLimitPerPortion !== null &&
+    costLimitPerPortion > 0 &&
+    perPortion !== null &&
+    perPortion > costLimitPerPortion
 
   const getDifficultyColor = (diff?: string) => {
     switch (diff) {
@@ -128,14 +137,32 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
             </span>
           </div>
 
-          <div
-            className="flex items-center gap-1 text-verde font-mono font-semibold"
-            title="Custo estimado da receita"
-          >
-            <DollarSign className="w-3.5 h-3.5 text-verde" />
-            <span>
-              {typeof recipe.cost === 'number' && recipe.cost > 0 ? formatBRL(recipe.cost) : '—'}
-            </span>
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+            <div
+              className={`flex items-center gap-1 font-mono font-semibold ${
+                isExceeded ? 'text-rose-700 dark:text-rose-400' : 'text-verde'
+              }`}
+              title="Custo estimado da receita"
+            >
+              <DollarSign
+                className={`w-3.5 h-3.5 ${
+                  isExceeded ? 'text-rose-600 dark:text-rose-400' : 'text-verde'
+                }`}
+              />
+              <span>
+                {typeof recipe.cost === 'number' && recipe.cost > 0 ? formatBRL(recipe.cost) : '—'}
+              </span>
+            </div>
+
+            {/* Cost limit alert badge when per-portion is available */}
+            {perPortion !== null && costLimitPerPortion !== null && (
+              <CostAlertBadge
+                costPerPortion={perPortion}
+                limit={costLimitPerPortion}
+                size="sm"
+                showStatusText={false}
+              />
+            )}
           </div>
         </div>
       </div>

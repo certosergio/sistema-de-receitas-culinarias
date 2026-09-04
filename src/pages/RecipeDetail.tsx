@@ -31,6 +31,8 @@ import { SelectionToggle } from '@/components/SelectionToggle'
 import { DietaryBadges } from '@/components/DietaryBadges'
 import { exportRecipePdf } from '@/lib/recipePdf'
 import { PrintRecipe } from '@/components/PrintRecipe'
+import { CostAlertBadge } from '@/components/CostAlertBadge'
+import { useSettings } from '@/contexts/SettingsContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -55,6 +57,7 @@ import { toast } from '@/hooks/use-toast'
 const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { costLimitPerPortion } = useSettings()
 
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [linkedIngredients, setLinkedIngredients] = useState<RecipeIngredient[]>([])
@@ -69,10 +72,10 @@ const RecipeDetail: React.FC = () => {
     // Defer to next tick so the spinner state can render before the CPU-bound work.
     try {
       await new Promise((r) => setTimeout(r, 50))
-      exportRecipePdf(recipe)
+      exportRecipePdf(recipe, linkedIngredients)
       toast({
-        title: 'PDF gerado',
-        description: 'A ficha técnica foi exportada com sucesso.',
+        title: 'Ficha técnica exportada',
+        description: 'O PDF da ficha técnica foi gerado com sucesso.',
       })
     } catch (err) {
       console.error('Erro ao exportar PDF:', err)
@@ -182,6 +185,26 @@ const RecipeDetail: React.FC = () => {
       ? legacyTotalCost
       : recipe.cost || 0
   const formatBRL = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
+
+  // Custo por porção calculado
+  let perPortionCost: number | null = null
+  if (displayCost > 0) {
+    if (recipe.yield_quantity && recipe.yield_quantity > 0) {
+      perPortionCost = displayCost / recipe.yield_quantity
+    } else if (recipe.portions) {
+      const match = recipe.portions.match(/^(\d+(?:[.,]\d+)?)/)
+      if (match) {
+        const parsed = parseFloat(match[1].replace(',', '.'))
+        if (parsed > 0) perPortionCost = displayCost / parsed
+      }
+    }
+  }
+
+  const isCostExceeded =
+    costLimitPerPortion !== null &&
+    costLimitPerPortion > 0 &&
+    perPortionCost !== null &&
+    perPortionCost > costLimitPerPortion
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">
@@ -355,15 +378,30 @@ const RecipeDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Porção Unitária */}
+          {/* Porção Unitária & Custo por Porção */}
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5 text-tinta-ter/80">
               <Scale className="w-3 h-3 text-tinta-ter/80" />
-              <span className="text-[9px] uppercase tracking-wider">Porção Unitária</span>
+              <span className="text-[9px] uppercase tracking-wider">Custo / Porção</span>
             </div>
-            <div className="text-xs font-medium text-tinta-sec line-clamp-1">
-              {recipe.portions || 'Não especificada'}
+            <div className="text-xs font-medium text-tinta-sec flex items-center gap-1.5 flex-wrap">
+              <span className="font-mono font-semibold">
+                {perPortionCost !== null ? formatBRL(perPortionCost) : recipe.portions || '—'}
+              </span>
+              {perPortionCost !== null && costLimitPerPortion !== null && (
+                <CostAlertBadge
+                  costPerPortion={perPortionCost}
+                  limit={costLimitPerPortion}
+                  size="sm"
+                  showStatusText={false}
+                />
+              )}
             </div>
+            {recipe.portions && perPortionCost !== null && (
+              <span className="text-[10px] text-tinta-ter block truncate">
+                Porção: {recipe.portions}
+              </span>
+            )}
           </div>
 
           {/* Tempo de Preparo */}
@@ -409,17 +447,23 @@ const RecipeDetail: React.FC = () => {
           {/* Custo Estimado (soma dos ingredientes) */}
           <div className="space-y-0.5 col-span-2 md:col-span-1">
             <div className="flex items-center gap-1.5 text-tinta-ter/80">
-              <DollarSign className="w-3 h-3 text-verde" />
+              <DollarSign
+                className={`w-3 h-3 ${isCostExceeded ? 'text-rose-600' : 'text-verde'}`}
+              />
               <span className="text-[9px] uppercase tracking-wider font-semibold text-tinta-sec">
                 Custo Total
               </span>
             </div>
-            <div className="text-sm font-bold text-verde font-mono">
+            <div
+              className={`text-sm font-bold font-mono ${
+                isCostExceeded ? 'text-rose-700' : 'text-verde'
+              }`}
+            >
               {hasLinkedIngredients || displayCost > 0 ? formatBRL(displayCost) : '—'}
             </div>
             {hasLinkedIngredients ? (
               <span className="text-[10px] text-verde/80 font-medium block">
-                Calculado a partir de {linkedIngredients.length}{' '}
+                {linkedIngredients.length}{' '}
                 {linkedIngredients.length === 1
                   ? 'ingrediente vinculado'
                   : 'ingredientes vinculados'}
@@ -428,6 +472,16 @@ const RecipeDetail: React.FC = () => {
               <span className="text-[10px] text-tinta-ter/80 block">
                 Sem ingredientes vinculados
               </span>
+            )}
+            {costLimitPerPortion !== null && perPortionCost !== null && (
+              <div className="pt-0.5">
+                <CostAlertBadge
+                  costPerPortion={perPortionCost}
+                  limit={costLimitPerPortion}
+                  size="sm"
+                  showStatusText={true}
+                />
+              </div>
             )}
           </div>
         </div>

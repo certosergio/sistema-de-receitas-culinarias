@@ -33,3 +33,28 @@ export function yieldLabel(recipe: Recipe): string {
   }
   return recipe.portions || '—'
 }
+
+/**
+ * Calcula o custo por porção de uma receita com base no custo total e no rendimento.
+ * Retorna null se não houver custo ou rendimento positivo.
+ */
+export function recipeCostPerPortion(recipe: Recipe, explicitTotalCost?: number): number | null {
+  const total = explicitTotalCost !== undefined ? explicitTotalCost : recipeCost(recipe)
+  if (!total || total <= 0) return null
+
+  // Tenta pelo yield_quantity
+  if (recipe.yield_quantity && recipe.yield_quantity > 0) {
+    return total / recipe.yield_quantity
+  }
+
+  // Tenta extrair número inicial do texto de portions (ex: "4 porções", "12 fatias")
+  if (recipe.portions) {
+    const match = recipe.portions.match(/^(\d+(?:[.,]\d+)?)/)
+    if (match) {
+      const parsed = parseFloat(match[1].replace(',', '.'))
+      if (parsed > 0) return total / parsed
+    }
+  }
+
+  return null
+}

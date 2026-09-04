@@ -208,6 +208,14 @@ export interface RecipeIngredient {
   updated: string
 }
 
+export interface UserSettings {
+  id: string
+  user: string
+  cost_limit_per_portion?: number | null
+  created: string
+  updated: string
+}
+
 export interface RecipeFormData {
   title: string
   slug?: string

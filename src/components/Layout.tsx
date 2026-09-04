@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/hooks/use-theme'
+import { SidebarSearch } from '@/components/SidebarSearch'
 
 const Layout: React.FC = () => {
   const { user, logout } = useAuth()
@@ -110,6 +111,11 @@ const Layout: React.FC = () => {
                 </span>
               </div>
             </Link>
+          </div>
+
+          {/* Global Search Bar (Desktop) */}
+          <div className="px-4 pt-3.5 pb-1">
+            <SidebarSearch />
           </div>
 
           {/* Navigation Items */}
@@ -291,6 +297,11 @@ const Layout: React.FC = () => {
                 >
                   <X className="w-5 h-5" />
                 </button>
+              </div>
+
+              {/* Mobile Global Search Bar */}
+              <div className="px-4 pt-3 pb-1">
+                <SidebarSearch onItemSelect={() => setMobileMenuOpen(false)} />
               </div>
 
               {/* Mobile Nav */}

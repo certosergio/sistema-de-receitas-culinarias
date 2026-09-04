@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { FavoritesProvider } from '@/contexts/FavoritesContext'
 import { SelectionProvider } from '@/contexts/SelectionContext'
+import { SettingsProvider } from '@/contexts/SettingsContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 
@@ -34,48 +35,50 @@ const App = () => (
     <AuthProvider>
       <FavoritesProvider>
         <SelectionProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              {/* Public Auth Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/registro" element={<Register />} />
-              <Route path="/recuperar-senha" element={<RecuperarSenha />} />
-              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+          <SettingsProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                {/* Public Auth Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/registro" element={<Register />} />
+                <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+                <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
-              {/* Protected Authenticated Routes */}
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/" element={<Index />} />
-                <Route path="/receitas" element={<RecipesList />} />
-                <Route path="/receitas/nova" element={<RecipeForm />} />
-                <Route path="/receitas/:id" element={<RecipeDetail />} />
-                <Route path="/receitas/:id/editar" element={<RecipeForm />} />
-                <Route path="/relatorio-custos" element={<RelatorioCustos />} />
-                <Route path="/importar" element={<ImportarReceita />} />
-                <Route path="/categorias" element={<Categories />} />
-                <Route path="/tecnicas" element={<Techniques />} />
-                <Route path="/categorias-ingredientes" element={<IngredientCategories />} />
-                <Route path="/ingredientes" element={<IngredientsPage />} />
-                <Route path="/favoritos" element={<Favoritos />} />
-                <Route path="/selecionadas" element={<Selecionadas />} />
-                <Route path="/colecoes" element={<Colecoes />} />
-                <Route path="/colecoes/:id" element={<ColecaoDetail />} />
-              </Route>
+                {/* Protected Authenticated Routes */}
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <Layout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="/" element={<Index />} />
+                  <Route path="/receitas" element={<RecipesList />} />
+                  <Route path="/receitas/nova" element={<RecipeForm />} />
+                  <Route path="/receitas/:id" element={<RecipeDetail />} />
+                  <Route path="/receitas/:id/editar" element={<RecipeForm />} />
+                  <Route path="/relatorio-custos" element={<RelatorioCustos />} />
+                  <Route path="/importar" element={<ImportarReceita />} />
+                  <Route path="/categorias" element={<Categories />} />
+                  <Route path="/tecnicas" element={<Techniques />} />
+                  <Route path="/categorias-ingredientes" element={<IngredientCategories />} />
+                  <Route path="/ingredientes" element={<IngredientsPage />} />
+                  <Route path="/favoritos" element={<Favoritos />} />
+                  <Route path="/selecionadas" element={<Selecionadas />} />
+                  <Route path="/colecoes" element={<Colecoes />} />
+                  <Route path="/colecoes/:id" element={<ColecaoDetail />} />
+                </Route>
 
-              {/* Public share route (no auth required) */}
-              <Route path="/compartilhar/:shareToken" element={<Compartilhar />} />
+                {/* Public share route (no auth required) */}
+                <Route path="/compartilhar/:shareToken" element={<Compartilhar />} />
 
-              {/* 404 Fallback */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
+                {/* 404 Fallback */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </TooltipProvider>
+          </SettingsProvider>
         </SelectionProvider>
       </FavoritesProvider>
     </AuthProvider>
