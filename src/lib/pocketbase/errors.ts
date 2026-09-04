@@ -1,30 +1,31 @@
+import { ClientResponseError } from 'pocketbase'
+
 export type FieldErrors = Record<string, string>
 
 export function extractFieldErrors(error: unknown): FieldErrors {
-  if (!error || typeof error !== 'object') return {}
-  const err = error as {
-    data?: { data?: Record<string, { message?: string } | string> }
-    response?: { data?: Record<string, { message?: string } | string> }
-  }
-  const raw = err.response?.data || err.data?.data
-  if (!raw || typeof raw !== 'object') return {}
-
-  const result: FieldErrors = {}
-  for (const [key, val] of Object.entries(raw)) {
-    if (typeof val === 'string') {
-      result[key] = val
-    } else if (val && typeof val === 'object' && 'message' in val && typeof val.message === 'string') {
-      result[key] = val.message
+  if (!(error instanceof ClientResponseError)) return {}
+  const data = error.response?.data
+  if (!data || typeof data !== 'object') return {}
+  const errors: FieldErrors = {}
+  for (const [field, detail] of Object.entries(data)) {
+    if (
+      detail &&
+      typeof detail === 'object' &&
+      'message' in detail &&
+      typeof (detail as { message: unknown }).message === 'string'
+    ) {
+      errors[field] = (detail as { message: string }).message
     }
   }
-  return result
+  return errors
 }
 
 export function getErrorMessage(error: unknown, fallback?: string): string {
-  if (typeof error === 'string') return error
-  if (error && typeof error === 'object') {
-    const err = error as { message?: string }
-    if (err.message) return err.message
+  if (!(error instanceof ClientResponseError)) {
+    return error instanceof Error ? error.message : fallback || 'An unexpected error occurred.'
   }
-  return fallback || 'Ocorreu um erro inesperado.'
+  const msgs = Object.values(extractFieldErrors(error))
+  return msgs.length > 0
+    ? msgs.join(' ')
+    : error.message || fallback || 'An unexpected error occurred.'
 }
