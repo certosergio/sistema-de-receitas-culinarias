@@ -192,6 +192,22 @@ export interface SelectedRecipe {
   updated: string
 }
 
+export interface RecipeIngredient {
+  id: string
+  recipe_id: string
+  ingredient_id: string
+  quantidade: number
+  observacao?: string
+  user: string
+  expand?: {
+    recipe_id?: Recipe
+    ingredient_id?: Ingredient
+    user?: User
+  }
+  created: string
+  updated: string
+}
+
 export interface RecipeFormData {
   title: string
   slug?: string

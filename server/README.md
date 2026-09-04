@@ -10,6 +10,13 @@ Esta pasta contém as definições do backend (schema, seed e endpoints customiz
 - `hooks/`:
   - `share_collection.js`: Rota pública `GET /api/share/:token` para compartilhamento de coleções sem exigir autenticação.
 
+## Configuração de SMTP (Recuperação de Senha)
+
+A funcionalidade de redefinição de senha (`/recuperar-senha` e `/redefinir-senha`) depende do envio de e-mails transacionais do PocketBase:
+- No painel admin (`http://localhost:8090/_/`), acesse **Settings > Mail settings**.
+- Habilite **Use custom SMTP server**. Em ambiente de teste local, você pode subir o Mailpit (`localhost:1025`) para captura de e-mails em sandbox.
+- Se o servidor não tiver SMTP configurado, a chamada de redefinição pode retornar erro de envio. Nesse cenário, o administrador pode trocar a senha do usuário diretamente pela listagem da coleção `users` no painel.
+
 ---
 
 ## Ritual de Execução Local

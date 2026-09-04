@@ -20,42 +20,37 @@ export function extractFieldErrors(error: unknown): FieldErrors {
   return errors
 }
 
-export function isDuplicateError(error: unknown, field?: string): boolean {
-  if (!(error instanceof ClientResponseError)) return false
-  const data = error.response?.data
-  if (data && typeof data === 'object') {
-    if (field) {
-      const fieldErr = (data as Record<string, { code?: string; message?: string }>)[field]
-      if (
-        fieldErr &&
-        (fieldErr.code === 'validation_not_unique' ||
-          /unique|já existe|ja existe/i.test(fieldErr.message || ''))
-      ) {
-        return true
-      }
-    } else {
-      for (const val of Object.values(data)) {
+export function isDuplicateError(err: unknown, fieldName?: string): boolean {
+  if (err instanceof ClientResponseError) {
+    if (err.status === 400) {
+      const data = err.response?.data
+      if (fieldName && data && typeof data === 'object') {
+        const fieldError = (data as Record<string, { code?: string; message?: string }>)[fieldName]
         if (
-          val &&
-          typeof val === 'object' &&
-          ('code' in val || 'message' in val) &&
-          ((val as { code?: string }).code === 'validation_not_unique' ||
-            /unique|já existe|ja existe/i.test((val as { message?: string }).message || ''))
+          fieldError &&
+          (fieldError.code === 'validation_not_unique' || /unique/i.test(fieldError.message || ''))
         ) {
           return true
         }
       }
+      return (
+        err.response?.message?.includes('UNIQUE constraint failed') ||
+        err.message?.includes('UNIQUE constraint failed') ||
+        false
+      )
     }
   }
-  return /unique constraint|UNIQUE constraint failed|já existe/i.test(error.message || '')
+  const msg = (err as Error)?.message || ''
+  return /unique|duplicate|já existe/i.test(msg)
 }
 
-export function getErrorMessage(error: unknown, fallback?: string): string {
+export function getErrorMessage(
+  error: unknown,
+  fallback: string = 'Ocorreu um erro inesperado.',
+): string {
   if (!(error instanceof ClientResponseError)) {
-    return error instanceof Error ? error.message : fallback || 'An unexpected error occurred.'
+    return error instanceof Error ? error.message : fallback
   }
   const msgs = Object.values(extractFieldErrors(error))
-  return msgs.length > 0
-    ? msgs.join(' ')
-    : error.message || fallback || 'An unexpected error occurred.'
+  return msgs.length > 0 ? msgs.join(' ') : error.message || fallback
 }

@@ -22,6 +22,7 @@ import {
   ListChecks,
   Tags,
   Package,
+  DollarSign,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -71,6 +72,7 @@ const Layout: React.FC = () => {
   }[] = [
     { label: 'Painel', to: '/', icon: LayoutDashboard },
     { label: 'Receitas', to: '/receitas', icon: BookOpen },
+    { label: 'Relatório de Custos', to: '/relatorio-custos', icon: DollarSign },
     { label: 'Selecionadas', to: '/selecionadas', icon: ListChecks, badge: selectionCount },
     { label: 'Importar', to: '/importar', icon: Upload },
     { label: 'Categorias', to: '/categorias', icon: FolderTree },

@@ -50,6 +50,7 @@ screenshot.png
 /pb/
 /pb_data/
 /pocketbase
+!/pocketbase/
 /pocketbase.exe
 
 # Linux kernel core dumps (e.g. when oxfmt or pnpm crash)

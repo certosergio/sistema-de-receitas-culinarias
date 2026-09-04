@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getRecipeById, deleteRecipe, getRecipeCoverUrl } from '@/services/recipes'
-import { Recipe } from '@/types'
+import { getRecipeIngredients } from '@/services/recipeIngredients'
+import { Recipe, RecipeIngredient } from '@/types'
 import { RecipePlaceholder } from '@/components/RecipePlaceholder'
 import {
   Clock,
@@ -56,6 +57,7 @@ const RecipeDetail: React.FC = () => {
   const navigate = useNavigate()
 
   const [recipe, setRecipe] = useState<Recipe | null>(null)
+  const [linkedIngredients, setLinkedIngredients] = useState<RecipeIngredient[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -89,8 +91,9 @@ const RecipeDetail: React.FC = () => {
       if (!id) return
       try {
         setLoading(true)
-        const data = await getRecipeById(id)
+        const [data, linked] = await Promise.all([getRecipeById(id), getRecipeIngredients(id)])
         setRecipe(data)
+        setLinkedIngredients(linked)
       } catch (err) {
         console.error('Erro ao buscar receita:', err)
         toast({
@@ -152,15 +155,32 @@ const RecipeDetail: React.FC = () => {
   const totalTime =
     (recipe.prep_minutes || 0) + (recipe.cook_minutes || 0) || recipe.total_minutes || 0
 
-  // Custo total: soma dos custos individuais dos ingredientes (com fallback
-  // para o campo recipe.cost legado quando não houver custos por ingrediente).
-  const ingredientsTotalCost = Array.isArray(recipe.ingredients)
+  // Custo total:
+  // 1. Se tiver ingredientes vinculados (recipe_ingredients), calcula o custo somando linha a linha
+  // 2. Se não tiver, verifica se tem custo nos ingredients JSON legados
+  // 3. Fallback: recipe.cost
+  const linkedTotalCost = linkedIngredients.reduce((sum, item) => {
+    const ing = item.expand?.ingredient_id
+    if (!ing) return sum
+    const qtd = item.quantidade || 0
+    const custoUnit = ing.custo_unitario || 0
+    const lineCost = qtd * custoUnit
+    return sum + lineCost
+  }, 0)
+
+  const legacyTotalCost = Array.isArray(recipe.ingredients)
     ? recipe.ingredients.reduce((sum, ing) => {
         const c = typeof ing.cost === 'number' ? ing.cost : 0
         return sum + (isNaN(c) ? 0 : c)
       }, 0)
     : 0
-  const displayCost = ingredientsTotalCost > 0 ? ingredientsTotalCost : recipe.cost || 0
+
+  const hasLinkedIngredients = linkedIngredients.length > 0
+  const displayCost = hasLinkedIngredients
+    ? linkedTotalCost
+    : legacyTotalCost > 0
+      ? legacyTotalCost
+      : recipe.cost || 0
   const formatBRL = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
 
   return (
@@ -389,15 +409,24 @@ const RecipeDetail: React.FC = () => {
           {/* Custo Estimado (soma dos ingredientes) */}
           <div className="space-y-0.5 col-span-2 md:col-span-1">
             <div className="flex items-center gap-1.5 text-tinta-ter/80">
-              <DollarSign className="w-3 h-3 text-tinta-ter/80" />
-              <span className="text-[9px] uppercase tracking-wider">Custo Estimado</span>
+              <DollarSign className="w-3 h-3 text-verde" />
+              <span className="text-[9px] uppercase tracking-wider font-semibold text-tinta-sec">
+                Custo Total
+              </span>
             </div>
-            <div className="text-xs font-medium text-tinta-sec">
-              {displayCost > 0 ? formatBRL(displayCost) : 'Não calculado'}
+            <div className="text-sm font-bold text-verde font-mono">
+              {hasLinkedIngredients || displayCost > 0 ? formatBRL(displayCost) : '—'}
             </div>
-            {ingredientsTotalCost > 0 && (
-              <span className="text-[10px] text-tinta-ter/80">
-                Soma do custo individual dos ingredientes
+            {hasLinkedIngredients ? (
+              <span className="text-[10px] text-verde/80 font-medium block">
+                Calculado a partir de {linkedIngredients.length}{' '}
+                {linkedIngredients.length === 1
+                  ? 'ingrediente vinculado'
+                  : 'ingredientes vinculados'}
+              </span>
+            ) : (
+              <span className="text-[10px] text-tinta-ter/80 block">
+                Sem ingredientes vinculados
               </span>
             )}
           </div>
@@ -414,13 +443,93 @@ const RecipeDetail: React.FC = () => {
               <h2 className="font-serif text-2xl font-bold text-tinta">Ingredientes</h2>
             </div>
             <span className="text-xs font-mono text-tinta-ter bg-marfim-card px-2.5 py-1 rounded-full border border-marfim-border">
-              {Array.isArray(recipe.ingredients) ? recipe.ingredients.length : 0} itens
+              {hasLinkedIngredients
+                ? `${linkedIngredients.length} ${linkedIngredients.length === 1 ? 'vinculado' : 'vinculados'}`
+                : `${Array.isArray(recipe.ingredients) ? recipe.ingredients.length : 0} itens`}
             </span>
           </div>
 
-          <div className="space-y-3">
-            {Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 ? (
-              recipe.ingredients.map((ing, idx) => (
+          {hasLinkedIngredients ? (
+            /* Lista de Ingredientes Vinculados do Catálogo */
+            <div className="space-y-2.5">
+              {linkedIngredients.map((item) => {
+                const ing = item.expand?.ingredient_id
+                const qtd = item.quantidade || 0
+                const unidade = ing?.unidade || ''
+                const custoUnit = ing?.custo_unitario || 0
+                const lineCost = qtd * custoUnit
+
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-marfim-card/60 transition-colors border border-marfim-border/50 bg-marfim/10"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-verde shrink-0 mt-2" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5 text-sm leading-relaxed text-tinta">
+                        <strong className="font-semibold text-tinta font-mono text-xs sm:text-sm bg-marfim-card px-2 py-0.5 rounded border border-marfim-border">
+                          {qtd} {unidade}
+                        </strong>
+                        <span className="font-medium">{ing?.nome || 'Ingrediente'}</span>
+                        {ing?.codigo && (
+                          <span className="text-[10px] font-mono text-tinta-ter bg-marfim-card px-1.5 py-0.2 rounded border border-marfim-border/60">
+                            {ing.codigo}
+                          </span>
+                        )}
+                      </div>
+                      {item.observacao && (
+                        <p className="text-xs text-tinta-sec italic mt-1">{item.observacao}</p>
+                      )}
+                      {custoUnit > 0 && (
+                        <p className="text-[10px] text-tinta-ter font-mono mt-0.5">
+                          {formatBRL(custoUnit)} / {unidade || 'un'}
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="font-mono text-xs sm:text-sm font-bold text-verde">
+                        {formatBRL(lineCost)}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Custo Total dos Ingredientes Vinculados */}
+              <div className="pt-4 border-t-2 border-marfim-border flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-tinta uppercase tracking-wider block">
+                    Custo Total da Receita
+                  </span>
+                  <span className="text-[11px] text-tinta-ter">
+                    Soma de {linkedIngredients.length}{' '}
+                    {linkedIngredients.length === 1 ? 'item' : 'itens'} vinculados
+                  </span>
+                </div>
+                <span className="font-serif text-2xl font-bold text-verde font-mono">
+                  {formatBRL(linkedTotalCost)}
+                </span>
+              </div>
+            </div>
+          ) : Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 ? (
+            /* Fallback para lista de ingredientes legados em texto livre */
+            <div className="space-y-3">
+              <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start justify-between gap-2">
+                <span>
+                  Esta receita ainda usa a lista de ingredientes em texto livre. Vincule
+                  ingredientes do catálogo para calcular o custo exato.
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate(`/receitas/${recipe.id}/editar`)}
+                  className="h-7 text-[11px] border-amber-300 bg-white text-amber-900 hover:bg-amber-100 shrink-0 rounded-lg"
+                >
+                  Vincular
+                </Button>
+              </div>
+
+              {recipe.ingredients.map((ing, idx) => (
                 <div
                   key={idx}
                   className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-marfim-card/60 transition-colors border-b border-marfim-border/40 last:border-0"
@@ -440,21 +549,38 @@ const RecipeDetail: React.FC = () => {
                       : '—'}
                   </span>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-tinta-sec italic">Nenhum ingrediente informado.</p>
-            )}
-          </div>
+              ))}
 
-          {/* Custo total da lista de ingredientes */}
-          {ingredientsTotalCost > 0 && (
-            <div className="flex items-center justify-between gap-3 pt-4 border-t-2 border-marfim-border">
-              <span className="text-xs font-bold text-tinta uppercase tracking-wider">
-                Custo total dos ingredientes
-              </span>
-              <span className="font-serif text-xl font-bold text-verde font-mono">
-                {formatBRL(ingredientsTotalCost)}
-              </span>
+              {legacyTotalCost > 0 && (
+                <div className="flex items-center justify-between gap-3 pt-4 border-t-2 border-marfim-border">
+                  <span className="text-xs font-bold text-tinta uppercase tracking-wider">
+                    Custo total estimado
+                  </span>
+                  <span className="font-serif text-xl font-bold text-verde font-mono">
+                    {formatBRL(legacyTotalCost)}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Sem ingredientes vinculados */
+            <div className="py-8 text-center space-y-3">
+              <p className="text-sm text-tinta-sec italic">
+                Nenhum ingrediente vinculado a esta receita ainda.
+              </p>
+              <p className="text-xs text-tinta-ter max-w-xs mx-auto">
+                Vincule matérias-primas do catálogo para acompanhar o custo unitário e o total da
+                ficha técnica.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/receitas/${recipe.id}/editar`)}
+                className="border-verde/40 text-verde hover:bg-verde hover:text-white rounded-xl text-xs gap-1.5 mt-2"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Vincular Ingredientes</span>
+              </Button>
             </div>
           )}
         </section>

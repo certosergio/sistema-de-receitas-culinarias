@@ -3,7 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getRecipeById, createRecipe, updateRecipe, getRecipeCoverUrl } from '@/services/recipes'
 import { getCategories } from '@/services/categories'
 import { getTechniques } from '@/services/techniques'
-import { Category, Technique, IngredientItem, RecipeFormData } from '@/types'
+import { getIngredients } from '@/services/ingredients'
+import { getRecipeIngredients, syncRecipeIngredients } from '@/services/recipeIngredients'
+import { Category, Technique, Ingredient, IngredientItem, RecipeFormData } from '@/types'
 
 import { RecipePlaceholder } from '@/components/RecipePlaceholder'
 import ImportRecipeDialog from '@/components/ImportRecipeDialog'
@@ -42,33 +44,19 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 
-/** Form-local ingredient shape: cost is a string while editing. */
-type FormIngredient = {
-  name: string
-  quantity: string
-  unit: string
-  cost: string
+/** Item vinculado ao catálogo de ingredientes */
+interface LinkedIngredientRow {
+  id?: string // id do recipe_ingredient existente se houver
+  ingredient_id: string
+  quantidade: string // valor string enquanto edita no form
+  observacao: string
 }
 
-const emptyIngredient = (): FormIngredient => ({ name: '', quantity: '', unit: 'g', cost: '' })
-
-const toFormIngredient = (i: IngredientItem): FormIngredient => ({
-  name: i.name || '',
-  quantity: i.quantity || '',
-  unit: i.unit || '',
-  cost: i.cost !== undefined && i.cost !== null ? String(i.cost) : '',
+const emptyLinkedIngredient = (defaultIngId = ''): LinkedIngredientRow => ({
+  ingredient_id: defaultIngId,
+  quantidade: '1',
+  observacao: '',
 })
-
-/** Convert the form-local ingredient (cost as string) back to the API shape. */
-const toIngredientItem = (i: FormIngredient): IngredientItem => {
-  const num = Number(String(i.cost).replace(',', '.'))
-  return {
-    name: i.name,
-    quantity: i.quantity,
-    unit: i.unit,
-    ...(i.cost !== '' && !isNaN(num) ? { cost: num } : {}),
-  }
-}
 
 const RecipeForm: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -77,6 +65,7 @@ const RecipeForm: React.FC = () => {
 
   const [categories, setCategories] = useState<Category[]>([])
   const [techniques, setTechniques] = useState<Technique[]>([])
+  const [allIngredients, setAllIngredients] = useState<Ingredient[]>([])
   const [loading, setLoading] = useState(isEditing)
   const [submitting, setSubmitting] = useState(false)
 
@@ -101,8 +90,8 @@ const RecipeForm: React.FC = () => {
   // Import-from-URL dialog.
   const [importOpen, setImportOpen] = useState(false)
 
-  // Dynamic Lists
-  const [ingredients, setIngredients] = useState<FormIngredient[]>([emptyIngredient()])
+  // Ingredientes Vinculados do Catálogo (recipe_ingredients)
+  const [linkedRows, setLinkedRows] = useState<LinkedIngredientRow[]>([])
   const [method, setMethod] = useState<string[]>([''])
 
   // Cover image management
@@ -119,12 +108,17 @@ const RecipeForm: React.FC = () => {
   useEffect(() => {
     async function init() {
       try {
-        const [cats, techs] = await Promise.all([getCategories(), getTechniques()])
+        const [cats, techs, ings] = await Promise.all([
+          getCategories(),
+          getTechniques(),
+          getIngredients(),
+        ])
         setCategories(cats)
         setTechniques(techs)
+        setAllIngredients(ings)
 
         if (id) {
-          const rec = await getRecipeById(id)
+          const [rec, linked] = await Promise.all([getRecipeById(id), getRecipeIngredients(id)])
           setTitle(rec.title || '')
           setSummary(rec.summary || '')
           setCategory(rec.category || '')
@@ -147,11 +141,41 @@ const RecipeForm: React.FC = () => {
             contains_camarao: Boolean(rec.contains_camarao),
           })
 
-          if (Array.isArray(rec.ingredients) && rec.ingredients.length > 0) {
-            setIngredients(rec.ingredients.map(toFormIngredient))
-          }
           if (Array.isArray(rec.method) && rec.method.length > 0) {
             setMethod(rec.method)
+          }
+
+          if (linked && linked.length > 0) {
+            setLinkedRows(
+              linked.map((row) => ({
+                id: row.id,
+                ingredient_id: row.ingredient_id,
+                quantidade: String(row.quantidade ?? 1),
+                observacao: row.observacao || '',
+              })),
+            )
+          } else if (
+            Array.isArray(rec.ingredients) &&
+            rec.ingredients.length > 0 &&
+            ings.length > 0
+          ) {
+            // Tenta casar ingredientes legados com o catálogo por nome aproximado
+            const initialMatched: LinkedIngredientRow[] = []
+            rec.ingredients.forEach((legacy) => {
+              const legacyName = (legacy.name || '').trim().toLowerCase()
+              const found = ings.find((i) => i.nome.toLowerCase() === legacyName)
+              if (found) {
+                const parsedQtd = parseFloat(String(legacy.quantity).replace(',', '.')) || 1
+                initialMatched.push({
+                  ingredient_id: found.id,
+                  quantidade: String(parsedQtd),
+                  observacao: legacy.unit ? `Original: ${legacy.unit}` : '',
+                })
+              }
+            })
+            if (initialMatched.length > 0) {
+              setLinkedRows(initialMatched)
+            }
           }
 
           const existingUrl = getRecipeCoverUrl(rec)
@@ -222,34 +246,42 @@ const RecipeForm: React.FC = () => {
     return p + c
   }, [prepMinutes, cookMinutes])
 
-  // Auto-calculated total cost: sum of per-ingredient costs.
+  // Map de ingredientes por id para acesso rápido
+  const ingredientsMap = useMemo(() => {
+    const map = new Map<string, Ingredient>()
+    allIngredients.forEach((ing) => map.set(ing.id, ing))
+    return map
+  }, [allIngredients])
+
+  // Auto-calculated total cost: sum of (quantidade * custo_unitario) for linked ingredients
   const totalCost = useMemo(() => {
-    return ingredients.reduce((sum, ing) => {
-      if (!ing.cost) return sum
-      const n = Number(String(ing.cost).replace(',', '.'))
-      return isNaN(n) ? sum : sum + n
+    return linkedRows.reduce((sum, row) => {
+      if (!row.ingredient_id) return sum
+      const ing = ingredientsMap.get(row.ingredient_id)
+      if (!ing) return sum
+      const q = parseFloat(row.quantidade.replace(',', '.'))
+      if (isNaN(q) || q <= 0) return sum
+      const cost = q * (ing.custo_unitario || 0)
+      return sum + cost
     }, 0)
-  }, [ingredients])
+  }, [linkedRows, ingredientsMap])
 
   const formatBRL = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`
 
-  // Dynamic ingredients operations
-  const addIngredient = () => {
-    setIngredients([...ingredients, emptyIngredient()])
+  // Operações de linhas de ingredientes vinculados
+  const addLinkedRow = (preselectId?: string) => {
+    const defaultId = preselectId || allIngredients[0]?.id || ''
+    setLinkedRows([...linkedRows, emptyLinkedIngredient(defaultId)])
   }
 
-  const removeIngredient = (index: number) => {
-    if (ingredients.length === 1) {
-      setIngredients([emptyIngredient()])
-      return
-    }
-    setIngredients(ingredients.filter((_, idx) => idx !== index))
+  const removeLinkedRow = (index: number) => {
+    setLinkedRows(linkedRows.filter((_, idx) => idx !== index))
   }
 
-  const updateIngredient = (index: number, field: keyof FormIngredient, value: string) => {
-    const copy = [...ingredients]
+  const updateLinkedRow = (index: number, field: keyof LinkedIngredientRow, value: string) => {
+    const copy = [...linkedRows]
     copy[index] = { ...copy[index], [field]: value }
-    setIngredients(copy)
+    setLinkedRows(copy)
   }
 
   // Dynamic method steps operations
@@ -302,7 +334,25 @@ const RecipeForm: React.FC = () => {
     if (parsed.difficulty) setDifficulty(parsed.difficulty as typeof difficulty)
     if (parsed.tips) setTips(parsed.tips)
     if (Array.isArray(parsed.ingredients) && parsed.ingredients.length > 0) {
-      setIngredients(parsed.ingredients.map(toFormIngredient))
+      // Tenta associar itens importados ao catálogo
+      const matched: LinkedIngredientRow[] = []
+      parsed.ingredients.forEach((ing) => {
+        const term = (ing.name || '').toLowerCase()
+        const found = allIngredients.find(
+          (ai) => ai.nome.toLowerCase() === term || term.includes(ai.nome.toLowerCase()),
+        )
+        if (found) {
+          const q = parseFloat(String(ing.quantity).replace(',', '.')) || 1
+          matched.push({
+            ingredient_id: found.id,
+            quantidade: String(q),
+            observacao: ing.unit ? `Original: ${ing.unit}` : '',
+          })
+        }
+      })
+      if (matched.length > 0) {
+        setLinkedRows(matched)
+      }
     }
     if (Array.isArray(parsed.method) && parsed.method.length > 0) {
       setMethod(parsed.method)
@@ -330,9 +380,9 @@ const RecipeForm: React.FC = () => {
       newErrors.technique = 'Selecione uma técnica de preparo'
     }
 
-    const cleanIngredients = ingredients.filter((i) => i.name && i.name.trim())
+    const cleanIngredients = linkedRows.filter((r) => r.ingredient_id)
     if (cleanIngredients.length === 0) {
-      newErrors.ingredients = 'Adicione ao menos um ingrediente'
+      newErrors.ingredients = 'Vincule ao menos um ingrediente do catálogo à receita'
     }
 
     const cleanMethod = method.filter((m) => m && m.trim())
@@ -360,7 +410,20 @@ const RecipeForm: React.FC = () => {
 
     setSubmitting(true)
 
-    const ingredientsPayload = ingredients.map(toIngredientItem)
+    // Monta o payload de ingredientes para compatibilidade com exportadores de PDF / compartilhado
+    const legacyPayload: IngredientItem[] = linkedRows
+      .filter((r) => r.ingredient_id)
+      .map((r) => {
+        const ing = ingredientsMap.get(r.ingredient_id)
+        const q = parseFloat(r.quantidade.replace(',', '.')) || 0
+        const custoLinha = q * (ing?.custo_unitario || 0)
+        return {
+          name: ing?.nome || 'Ingrediente',
+          quantity: r.quantidade,
+          unit: ing?.unidade || '',
+          cost: Number(custoLinha.toFixed(2)),
+        }
+      })
 
     const formData: RecipeFormData = {
       title,
@@ -374,8 +437,8 @@ const RecipeForm: React.FC = () => {
       prep_minutes: prepMinutes,
       cook_minutes: cookMinutes,
       // Recipe-level cost is auto-calculated as the sum of per-ingredient costs.
-      cost: totalCost,
-      ingredients: ingredientsPayload,
+      cost: Number(totalCost.toFixed(2)),
+      ingredients: legacyPayload,
       method,
       tips,
       contains_gluten: dietary.contains_gluten,
@@ -393,15 +456,39 @@ const RecipeForm: React.FC = () => {
       let savedRecipe
       if (isEditing && id) {
         savedRecipe = await updateRecipe(id, formData)
+        // Sincroniza vínculos de ingredientes
+        await syncRecipeIngredients(
+          savedRecipe.id,
+          linkedRows
+            .filter((r) => r.ingredient_id)
+            .map((r) => ({
+              id: r.id,
+              ingredient_id: r.ingredient_id,
+              quantidade: parseFloat(r.quantidade.replace(',', '.')) || 0,
+              observacao: r.observacao,
+            })),
+        )
         toast({
           title: 'Receita atualizada',
           description: 'As alterações foram salvas na ficha técnica com sucesso.',
         })
       } else {
         savedRecipe = await createRecipe(formData)
+        // Sincroniza vínculos de ingredientes da nova receita
+        await syncRecipeIngredients(
+          savedRecipe.id,
+          linkedRows
+            .filter((r) => r.ingredient_id)
+            .map((r) => ({
+              ingredient_id: r.ingredient_id,
+              quantidade: parseFloat(r.quantidade.replace(',', '.')) || 0,
+              observacao: r.observacao,
+            })),
+        )
         toast({
           title: 'Receita registrada',
-          description: 'A nova ficha técnica foi adicionada ao acervo.',
+          description:
+            'A nova ficha técnica foi adicionada ao acervo com seus ingredientes vinculados.',
         })
       }
       navigate(`/receitas/${savedRecipe.id}`)
@@ -836,17 +923,17 @@ const RecipeForm: React.FC = () => {
             </div>
           </section>
 
-          {/* SECTION 3: INGREDIENTES */}
+          {/* SECTION 3: INGREDIENTES VINCULADOS AO CATÁLOGO */}
           <section className="bg-white rounded-2xl p-6 sm:p-8 border border-marfim-border shadow-card space-y-6">
-            <div className="flex items-center justify-between border-b border-marfim-border pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-marfim-border pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-verde-subtle text-verde font-serif font-bold text-base flex items-center justify-center">
                   3
                 </div>
                 <div>
-                  <h2 className="font-serif text-xl font-bold text-tinta">Ingredientes</h2>
+                  <h2 className="font-serif text-xl font-bold text-tinta">Vincular Ingredientes</h2>
                   <p className="text-xs text-tinta-sec">
-                    Mise en place com quantidades e unidades exatas.
+                    Selecione insumos cadastrados para cálculo automático do custo da receita.
                   </p>
                 </div>
               </div>
@@ -854,11 +941,11 @@ const RecipeForm: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={addIngredient}
-                className="border-bronze/40 text-bronze hover:bg-bronze-subtle rounded-xl text-xs gap-1"
+                onClick={() => addLinkedRow()}
+                className="border-bronze/40 text-bronze hover:bg-bronze-subtle rounded-xl text-xs gap-1 self-start sm:self-auto"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Adicionar item</span>
+                <span>+ Vincular Ingrediente</span>
               </Button>
             </div>
 
@@ -866,77 +953,152 @@ const RecipeForm: React.FC = () => {
               <p className="text-xs text-red-600 font-medium">{errors.ingredients}</p>
             )}
 
-            <div className="space-y-3">
-              {ingredients.map((ing, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 sm:gap-3 p-2 bg-marfim/30 rounded-xl border border-marfim-border/70"
+            {allIngredients.length === 0 ? (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between gap-3">
+                <span>Nenhum ingrediente cadastrado no catálogo ainda.</span>
+                <Link
+                  to="/ingredientes"
+                  target="_blank"
+                  className="font-semibold underline hover:text-amber-950 shrink-0"
                 >
-                  <div className="w-20 sm:w-24 shrink-0">
-                    <Input
-                      placeholder="Qtd (ex: 200)"
-                      value={ing.quantity}
-                      onChange={(e) => updateIngredient(idx, 'quantity', e.target.value)}
-                      className="h-10 bg-white rounded-lg text-xs font-mono"
-                    />
-                  </div>
+                  Abrir Catálogo de Ingredientes
+                </Link>
+              </div>
+            ) : linkedRows.length === 0 ? (
+              <div className="p-8 border-2 border-dashed border-marfim-border rounded-xl text-center space-y-2 bg-marfim/20">
+                <p className="text-sm font-medium text-tinta-sec">
+                  Nenhum ingrediente vinculado a esta receita ainda.
+                </p>
+                <p className="text-xs text-tinta-ter">
+                  Vincule matérias-primas para calcular o custo exato da porção e total.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addLinkedRow()}
+                  className="border-verde/40 text-verde hover:bg-verde hover:text-white rounded-xl text-xs gap-1.5 mt-2"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Vincular primeiro ingrediente</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {linkedRows.map((row, idx) => {
+                  const currentIng = ingredientsMap.get(row.ingredient_id)
+                  const parsedQtd = parseFloat(row.quantidade.replace(',', '.')) || 0
+                  const lineCost = parsedQtd * (currentIng?.custo_unitario || 0)
 
-                  <div className="w-24 sm:w-28 shrink-0">
-                    <Input
-                      placeholder="Un (ex: g, ml)"
-                      value={ing.unit}
-                      onChange={(e) => updateIngredient(idx, 'unit', e.target.value)}
-                      className="h-10 bg-white rounded-lg text-xs"
-                    />
-                  </div>
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3 bg-marfim/25 rounded-xl border border-marfim-border/70 space-y-2"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                        {/* Select Ingrediente (busca por código ou nome) */}
+                        <div className="sm:col-span-6">
+                          <Label className="text-[10px] uppercase font-bold text-tinta-ter mb-1 block">
+                            Ingrediente (Código / Nome)
+                          </Label>
+                          <Select
+                            value={row.ingredient_id}
+                            onValueChange={(val) => updateLinkedRow(idx, 'ingredient_id', val)}
+                          >
+                            <SelectTrigger className="h-10 bg-white border-marfim-border rounded-xl text-xs font-medium">
+                              <SelectValue placeholder="Selecione o ingrediente..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-marfim-border rounded-xl shadow-dropdown max-h-72">
+                              {allIngredients.map((ing) => (
+                                <SelectItem key={ing.id} value={ing.id} className="text-xs">
+                                  <span className="font-mono font-semibold text-bronze mr-2">
+                                    [{ing.codigo}]
+                                  </span>
+                                  <span>{ing.nome}</span>
+                                  {ing.unidade && (
+                                    <span className="text-tinta-ter ml-1 font-mono">
+                                      ({ing.unidade})
+                                    </span>
+                                  )}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                  <div className="flex-1 min-w-0">
-                    <Input
-                      placeholder="Nome do ingrediente (ex.: Queijo Parmesão ralado)"
-                      value={ing.name}
-                      onChange={(e) => updateIngredient(idx, 'name', e.target.value)}
-                      className="h-10 bg-white rounded-lg text-xs"
-                    />
-                  </div>
+                        {/* Quantidade */}
+                        <div className="sm:col-span-3">
+                          <Label className="text-[10px] uppercase font-bold text-tinta-ter mb-1 block">
+                            Quantidade {currentIng?.unidade ? `(${currentIng.unidade})` : ''}
+                          </Label>
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            placeholder="1"
+                            value={row.quantidade}
+                            onChange={(e) => updateLinkedRow(idx, 'quantidade', e.target.value)}
+                            className="h-10 bg-white rounded-xl text-xs font-mono"
+                          />
+                        </div>
 
-                  <div className="w-[100px] shrink-0">
-                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-mono text-tinta-ter pointer-events-none">
-                        R$
-                      </span>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0,00"
-                        value={ing.cost}
-                        onChange={(e) => updateIngredient(idx, 'cost', e.target.value)}
-                        className="h-10 bg-white rounded-lg text-xs font-mono pl-7 text-right"
-                        title="Custo individual do ingrediente (R$)"
-                      />
+                        {/* Custo da linha */}
+                        <div className="sm:col-span-2">
+                          <Label className="text-[10px] uppercase font-bold text-tinta-ter mb-1 block">
+                            Custo Linha
+                          </Label>
+                          <div className="h-10 bg-verde-subtle/70 border border-verde/20 rounded-xl flex items-center px-2 text-verde font-mono text-xs font-bold truncate">
+                            {formatBRL(lineCost)}
+                          </div>
+                        </div>
+
+                        {/* Botão Remover */}
+                        <div className="sm:col-span-1 flex justify-end items-end sm:pt-5">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeLinkedRow(idx)}
+                            className="h-9 w-9 text-tinta-ter hover:text-red-600 hover:bg-red-50 rounded-lg shrink-0"
+                            title="Remover este vínculo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Observação da linha (opcional) */}
+                      <div className="pt-1 border-t border-marfim-border/40 flex items-center gap-2">
+                        <Input
+                          placeholder="Observação da linha (ex.: cortado em cubos, peneirado, etc.)..."
+                          value={row.observacao}
+                          onChange={(e) => updateLinkedRow(idx, 'observacao', e.target.value)}
+                          className="h-8 bg-white/80 border-marfim-border/60 rounded-lg text-xs"
+                        />
+                        {currentIng?.custo_unitario !== undefined && (
+                          <span className="text-[10px] font-mono text-tinta-ter shrink-0 px-1">
+                            Unitário: {formatBRL(currentIng.custo_unitario)} /{' '}
+                            {currentIng.unidade || 'un'}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )
+                })}
+              </div>
+            )}
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeIngredient(idx)}
-                    className="h-9 w-9 text-tinta-ter hover:text-red-600 hover:bg-red-50 rounded-lg shrink-0"
-                    title="Remover linha"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-
-            {/* Custo total da lista de ingredientes */}
+            {/* Custo total da lista de ingredientes vinculados */}
             <div className="flex items-center justify-between gap-3 pt-3 border-t border-marfim-border/70">
-              <span className="text-xs font-semibold text-tinta-sec uppercase tracking-wider">
-                Custo total dos ingredientes
-              </span>
-              <span className="font-serif text-lg font-bold text-verde font-mono">
+              <div>
+                <span className="text-xs font-semibold text-tinta-sec uppercase tracking-wider block">
+                  Custo total dos ingredientes
+                </span>
+                <span className="text-[11px] text-tinta-ter">
+                  {linkedRows.filter((r) => r.ingredient_id).length} itens vinculados
+                </span>
+              </div>
+              <span className="font-serif text-xl font-bold text-verde font-mono">
                 {formatBRL(totalCost)}
               </span>
             </div>
@@ -944,11 +1106,11 @@ const RecipeForm: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={addIngredient}
-              className="w-full border-dashed border-marfim-border hover:border-bronze text-tinta-sec hover:text-bronze rounded-xl text-xs py-5"
+              onClick={() => addLinkedRow()}
+              className="w-full border-dashed border-marfim-border hover:border-bronze text-tinta-sec hover:text-bronze rounded-xl text-xs py-4"
             >
               <Plus className="w-4 h-4 mr-1.5" />
-              <span>+ Adicionar outro ingrediente</span>
+              <span>+ Adicionar outro ingrediente vinculado</span>
             </Button>
           </section>
 
@@ -1202,7 +1364,8 @@ const RecipeForm: React.FC = () => {
             {/* Live Counts */}
             <div className="flex items-center justify-between text-xs text-tinta-ter pt-1">
               <span>
-                <strong>{ingredients.filter((i) => i.name.trim()).length}</strong> ingredientes
+                <strong>{linkedRows.filter((r) => r.ingredient_id).length}</strong> ingredientes
+                vinculados
               </span>
               <span>
                 <strong>{method.filter((m) => m.trim()).length}</strong> passos

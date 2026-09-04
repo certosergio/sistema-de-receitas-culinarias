@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T13:19:05.217Z",
+  "generatedAt": "2026-09-04T13:38:29.714Z",
   "collections": [
     {
       "name": "users",
@@ -740,6 +740,71 @@
         "CREATE INDEX idx_ingredients_categoria ON ingredients (categoria_id)",
         "CREATE INDEX idx_ingredients_user ON ingredients (user)",
         "CREATE INDEX idx_ingredients_nome ON ingredients (nome)"
+      ]
+    },
+    {
+      "name": "recipe_ingredients",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "recipe_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "recipes"
+        },
+        {
+          "name": "ingredient_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "ingredients"
+        },
+        {
+          "name": "quantidade",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "observacao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_recipe_ingredients_recipe ON recipe_ingredients (recipe_id)",
+        "CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients (ingredient_id)",
+        "CREATE INDEX idx_recipe_ingredients_user ON recipe_ingredients (user)"
       ]
     }
   ]

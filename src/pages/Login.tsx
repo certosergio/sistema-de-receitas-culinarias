@@ -175,6 +175,15 @@ const Login: React.FC = () => {
                 </>
               )}
             </Button>
+
+            <div className="pt-2 text-center">
+              <a
+                href="/recuperar-senha"
+                className="text-xs text-tinta-sec hover:text-bronze transition-colors underline font-medium"
+              >
+                Esqueci minha senha
+              </a>
+            </div>
           </form>
         </div>
 

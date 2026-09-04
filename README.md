@@ -54,6 +54,14 @@ npm run dev
 > As migrations de schema e seed ficam em `server/migrations/` e os hooks em `server/hooks/`.
 > Os dados locais ficam em `pb_data/` e o executável em `pb/` (ambos ignorados no `.gitignore`).
 
+### Configuração de Envio de E-mail (SMTP) para Recuperação de Senha
+
+Para testar o fluxo de "Esqueci minha senha" e redefinição de credenciais:
+1. Acesse o painel administrativo do PocketBase em `http://localhost:8090/_/` (ou na instância do Cloud).
+2. Vá em **Settings > Mail settings**.
+3. Ative a opção **Use custom SMTP server** ou utilize uma ferramenta como **Mailpit** (`localhost:1025`) para captura de e-mails em sandbox de desenvolvimento local.
+4. Caso o SMTP não esteja configurado, as senhas de usuários podem ser redefinidas manualmente pela interface administrativa do PocketBase em **Collections > users**.
+
 ## 💻 Scripts Disponíveis
 
 ### Desenvolvimento

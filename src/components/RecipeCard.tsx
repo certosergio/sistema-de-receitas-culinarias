@@ -4,7 +4,8 @@ import { Recipe } from '@/types'
 import { getRecipeCoverUrl, isRecipeComplete } from '@/services/recipes'
 import { RecipePlaceholder } from './RecipePlaceholder'
 import { RecipeActions } from './RecipeActions'
-import { Clock, Users, Award, ChefHat } from 'lucide-react'
+import { formatBRL } from '@/lib/recipeUtils'
+import { Clock, Users, Award, ChefHat, DollarSign } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { RecipeCardDietary } from './RecipeCardDietary'
 import { SelectionToggle } from './SelectionToggle'
@@ -124,6 +125,16 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
               {recipe.yield_quantity
                 ? `${recipe.yield_quantity} ${recipe.yield_unit || 'porções'}`
                 : recipe.portions || 'Rendimento s/ inf.'}
+            </span>
+          </div>
+
+          <div
+            className="flex items-center gap-1 text-verde font-mono font-semibold"
+            title="Custo estimado da receita"
+          >
+            <DollarSign className="w-3.5 h-3.5 text-verde" />
+            <span>
+              {typeof recipe.cost === 'number' && recipe.cost > 0 ? formatBRL(recipe.cost) : '—'}
             </span>
           </div>
         </div>
