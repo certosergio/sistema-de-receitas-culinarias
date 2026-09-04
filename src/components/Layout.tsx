@@ -20,6 +20,8 @@ import {
   Sun,
   Moon,
   ListChecks,
+  Tags,
+  Package,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -73,6 +75,8 @@ const Layout: React.FC = () => {
     { label: 'Importar', to: '/importar', icon: Upload },
     { label: 'Categorias', to: '/categorias', icon: FolderTree },
     { label: 'Técnicas de Preparo', to: '/tecnicas', icon: Flame },
+    { label: 'Cat. de Ingredientes', to: '/categorias-ingredientes', icon: Tags },
+    { label: 'Ingredientes', to: '/ingredientes', icon: Package },
     { label: 'Favoritos', to: '/favoritos', icon: Heart },
     { label: 'Coleções', to: '/colecoes', icon: Bookmark },
   ]

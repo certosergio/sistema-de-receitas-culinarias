@@ -17,6 +17,8 @@ import RecipeForm from '@/pages/RecipeForm'
 import ImportarReceita from '@/pages/ImportarReceita'
 import Categories from '@/pages/Categories'
 import Techniques from '@/pages/Techniques'
+import IngredientCategories from '@/pages/IngredientCategories'
+import IngredientsPage from '@/pages/Ingredients'
 import Favoritos from '@/pages/Favoritos'
 import Colecoes from '@/pages/Colecoes'
 import ColecaoDetail from '@/pages/ColecaoDetail'
@@ -53,6 +55,8 @@ const App = () => (
                 <Route path="/importar" element={<ImportarReceita />} />
                 <Route path="/categorias" element={<Categories />} />
                 <Route path="/tecnicas" element={<Techniques />} />
+                <Route path="/categorias-ingredientes" element={<IngredientCategories />} />
+                <Route path="/ingredientes" element={<IngredientsPage />} />
                 <Route path="/favoritos" element={<Favoritos />} />
                 <Route path="/selecionadas" element={<Selecionadas />} />
                 <Route path="/colecoes" element={<Colecoes />} />

@@ -26,6 +26,32 @@ export interface Technique {
   updated: string
 }
 
+export interface IngredientCategory {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  created: string
+  updated: string
+}
+
+export interface Ingredient {
+  id: string
+  categoria_id: string
+  codigo: string
+  nome: string
+  unidade?: string
+  quantidade_unitaria?: number
+  custo_unitario?: number
+  user: string
+  expand?: {
+    categoria_id?: IngredientCategory
+    user?: User
+  }
+  created: string
+  updated: string
+}
+
 export interface IngredientItem {
   name: string
   quantity: string
